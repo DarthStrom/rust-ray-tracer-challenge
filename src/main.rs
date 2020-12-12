@@ -1,4 +1,4 @@
-mod lib;
+mod tuple;
 
 fn main() {
     println!("Hello, world!");
