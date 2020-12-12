@@ -2,11 +2,11 @@ use float_cmp::ApproxEq;
 use num_traits::{float::Float, FromPrimitive};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Tuple<F> {
-    x: F,
-    y: F,
-    z: F,
+    pub x: F,
+    pub y: F,
+    pub z: F,
     w: F,
 }
 
@@ -31,32 +31,28 @@ pub fn dot<F: Copy + Clone + Add<Output = F> + Mul<Output = F>>(a: &Tuple<F>, b:
 
 // TODO: generic for floats?
 impl<F: Float + FromPrimitive> Tuple<F> {
-    fn new(x: F, y: F, z: F, w: F) -> Self {
-        Self { x, y, z, w }
-    }
-
-    fn point(x: F, y: F, z: F) -> Self {
+    pub fn point(x: F, y: F, z: F) -> Self {
         Self::new(x, y, z, F::from_f64(1.0).unwrap())
     }
 
-    fn vector(x: F, y: F, z: F) -> Self {
+    pub fn vector(x: F, y: F, z: F) -> Self {
         Self::new(x, y, z, F::from_f64(0.0).unwrap())
     }
 
-    fn is_point(&self) -> bool {
+    pub fn is_point(&self) -> bool {
         self.w == F::from_f64(1.0).unwrap()
     }
 
-    fn is_vector(&self) -> bool {
+    pub fn is_vector(&self) -> bool {
         self.w == F::from_f64(0.0).unwrap()
     }
 
-    fn magnitude(&self) -> F {
+    pub fn magnitude(&self) -> F {
         let two = F::from_f64(2.0).unwrap();
         (self.x.powf(two) + self.y.powf(two) + self.z.powf(two) + self.w.powf(two)).sqrt()
     }
 
-    fn normalized(&self) -> Self {
+    pub fn normalized(&self) -> Self {
         let magnitude = self.magnitude();
         Self {
             x: self.x / magnitude,
@@ -64,6 +60,10 @@ impl<F: Float + FromPrimitive> Tuple<F> {
             z: self.z / magnitude,
             w: self.w / magnitude,
         }
+    }
+
+    fn new(x: F, y: F, z: F, w: F) -> Self {
+        Self { x, y, z, w }
     }
 }
 
