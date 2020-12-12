@@ -3,7 +3,7 @@ use float_cmp::ApproxEq;
 use num_traits::{Float, FromPrimitive};
 use std::ops::{Add, Mul, Sub};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Color<F> {
     tuple: Tuple<F>,
 }
