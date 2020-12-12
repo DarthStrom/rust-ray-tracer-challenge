@@ -1,11 +1,8 @@
-use float_cmp::ApproxEq;
-use std::vec;
-
 use crate::color::Color;
 
 pub struct Canvas {
-    width: usize,
-    height: usize,
+    pub width: usize,
+    pub height: usize,
     pixels: Vec<Color<f64>>,
 }
 
@@ -26,11 +23,9 @@ impl Canvas {
     }
 
     pub fn write_pixel(&mut self, x: usize, y: usize, color: Color<f64>) {
-        if x >= self.width || y >= self.height {
-            panic!("trying to write outside of canvas");
+        if x < self.width && y < self.height {
+            self.pixels[x + y * self.width] = color
         }
-
-        self.pixels[x + y * self.width] = color
     }
 
     pub fn to_ppm(&self) -> String {
@@ -89,7 +84,8 @@ fn color_u8(color: f64) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use float_cmp::F64Margin;
+    use float_cmp::{ApproxEq, F64Margin};
+    use std::vec;
 
     use super::*;
 
