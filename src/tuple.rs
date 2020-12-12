@@ -29,7 +29,6 @@ pub fn dot<F: Copy + Clone + Add<Output = F> + Mul<Output = F>>(a: &Tuple<F>, b:
     a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
 }
 
-// TODO: generic for floats?
 impl<F: Float + FromPrimitive> Tuple<F> {
     pub fn point(x: F, y: F, z: F) -> Self {
         Self::new(x, y, z, F::from_f64(1.0).unwrap())
