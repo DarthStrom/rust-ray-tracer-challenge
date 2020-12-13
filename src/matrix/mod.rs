@@ -1,8 +1,10 @@
 use crate::tuple::Tuple;
 use float_cmp::ApproxEq;
 use num_traits::{Float, FromPrimitive};
-use std::iter::Sum;
 use std::ops::{Add, Index, Mul};
+use std::{iter::Sum, ops::IndexMut};
+
+mod transformations;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Matrix<T> {
@@ -108,6 +110,12 @@ impl<T> Index<usize> for Matrix<T> {
 
     fn index(&self, i: usize) -> &Self::Output {
         &self.data[i]
+    }
+}
+
+impl<T> IndexMut<usize> for Matrix<T> {
+    fn index_mut(&mut self, i: usize) -> &mut Vec<T> {
+        &mut self.data[i]
     }
 }
 
