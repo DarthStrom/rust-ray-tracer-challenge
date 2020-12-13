@@ -2,12 +2,12 @@ use float_cmp::ApproxEq;
 use num_traits::{float::Float, FromPrimitive};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Tuple<F> {
     pub x: F,
     pub y: F,
     pub z: F,
-    w: F,
+    pub w: F,
 }
 
 pub fn cross<F: Copy + Clone + Float + FromPrimitive + Mul<Output = F>>(
@@ -61,7 +61,7 @@ impl<F: Float + FromPrimitive> Tuple<F> {
         }
     }
 
-    fn new(x: F, y: F, z: F, w: F) -> Self {
+    pub fn new(x: F, y: F, z: F, w: F) -> Self {
         Self { x, y, z, w }
     }
 }
