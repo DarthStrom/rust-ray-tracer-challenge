@@ -2,12 +2,18 @@ use std::fs;
 
 use canvas::Canvas;
 use color::Color;
+use float_cmp::F64Margin;
 use tuple::Tuple;
 
 mod canvas;
 mod color;
 mod matrix;
 mod tuple;
+
+pub const MARGIN: F64Margin = F64Margin {
+    ulps: 2,
+    epsilon: 0.00001,
+};
 
 fn main() {
     let mut p = Projectile {

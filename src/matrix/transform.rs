@@ -7,51 +7,90 @@ use crate::tuple::Tuple;
 
 use super::Matrix;
 
+#[derive(Debug)]
 pub struct Transform<F> {
     data: Matrix<F>,
 }
 
 impl<F: Float + FromPrimitive + Sum> Transform<F> {
+    pub fn identity() -> Self {
+        Self {
+            data: Matrix::identity(),
+        }
+    }
+
     pub fn rotation_x(radians: F) -> Self {
+        Transform::identity().rotate_x(radians)
+    }
+
+    pub fn rotation_y(radians: F) -> Self {
+        Transform::identity().rotate_y(radians)
+    }
+
+    pub fn rotation_z(radians: F) -> Self {
+        Transform::identity().rotate_z(radians)
+    }
+
+    pub fn scaling(x: F, y: F, z: F) -> Self {
+        Transform::identity().scale(x, y, z)
+    }
+
+    pub fn shearing(xy: F, xz: F, yx: F, yz: F, zx: F, zy: F) -> Self {
+        Transform::identity().shear(xy, xz, yx, yz, zx, zy)
+    }
+
+    pub fn translation(x: F, y: F, z: F) -> Self {
+        Transform::identity().translate(x, y, z)
+    }
+
+    pub fn rotate_x(&self, radians: F) -> Self {
         let mut data = Matrix::identity();
         data[1][1] = radians.cos();
         data[1][2] = -radians.sin();
         data[2][1] = radians.sin();
         data[2][2] = radians.cos();
 
-        Self { data }
+        Self {
+            data: data * self.data.clone(),
+        }
     }
 
-    pub fn rotation_y(radians: F) -> Self {
+    pub fn rotate_y(&self, radians: F) -> Self {
         let mut data = Matrix::identity();
         data[0][0] = radians.cos();
         data[0][2] = radians.sin();
         data[2][0] = -radians.sin();
         data[2][2] = radians.cos();
 
-        Self { data }
+        Self {
+            data: data * self.data.clone(),
+        }
     }
 
-    pub fn rotation_z(radians: F) -> Self {
+    pub fn rotate_z(&self, radians: F) -> Self {
         let mut data = Matrix::identity();
         data[0][0] = radians.cos();
         data[0][1] = -radians.sin();
         data[1][0] = radians.sin();
         data[1][1] = radians.cos();
 
-        Self { data }
+        Self {
+            data: data * self.data.clone(),
+        }
     }
 
-    pub fn scaling(x: F, y: F, z: F) -> Self {
+    pub fn scale(&self, x: F, y: F, z: F) -> Self {
         let mut data = Matrix::identity();
         data[0][0] = x;
         data[1][1] = y;
         data[2][2] = z;
 
-        Self { data }
+        Self {
+            data: data * self.data.clone(),
+        }
     }
 
-    pub fn shearing(xy: F, xz: F, yx: F, yz: F, zx: F, zy: F) -> Self {
+    pub fn shear(&self, xy: F, xz: F, yx: F, yz: F, zx: F, zy: F) -> Self {
         let mut data = Matrix::identity();
         data[0][1] = xy;
         data[0][2] = xz;
@@ -60,22 +99,36 @@ impl<F: Float + FromPrimitive + Sum> Transform<F> {
         data[2][0] = zx;
         data[2][1] = zy;
 
-        Self { data }
+        Self {
+            data: data * self.data.clone(),
+        }
     }
 
-    pub fn translation(x: F, y: F, z: F) -> Self {
+    pub fn translate(&self, x: F, y: F, z: F) -> Self {
         let mut data = Matrix::identity();
         data[0][3] = x;
         data[1][3] = y;
         data[2][3] = z;
 
-        Self { data }
+        Self {
+            data: data * self.data.clone(),
+        }
     }
 
     pub fn inverse(&self) -> Result<Transform<F>, String> {
         Ok(Transform {
             data: self.data.inverse()?,
         })
+    }
+}
+
+impl<T: Copy + Clone + Sum + Mul<Output = T>> Mul for Transform<T> {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        Self {
+            data: self.data * rhs.data,
+        }
     }
 }
 
@@ -100,7 +153,7 @@ impl<'a, M: Copy + Default, F: Copy + ApproxEq<Margin = M>> ApproxEq for &'a Tra
 mod tests {
     use float_cmp::F64Margin;
 
-    use crate::tuple::Tuple;
+    use crate::{tuple::Tuple, MARGIN};
     use std::f64::consts::PI;
 
     use super::*;
@@ -251,5 +304,55 @@ mod tests {
         let p = Tuple::point(2.0, 3.0, 4.0);
 
         assert_eq!(transform * p, Tuple::point(2.0, 3.0, 7.0));
+    }
+
+    #[test]
+    fn individual_transformations_are_applied_in_sequence() {
+        let p = Tuple::point(1.0, 0.0, 1.0);
+        let a = Transform::rotation_x(PI / 2.0);
+        let b = Transform::scaling(5.0, 5.0, 5.0);
+        let c = Transform::translation(10.0, 5.0, 7.0);
+
+        let p2 = a * p;
+        assert!(p2.approx_eq(&Tuple::point(1.0, -1.0, 0.0), MARGIN));
+
+        let p3 = b * p2;
+        assert!(p3.approx_eq(&Tuple::point(5.0, -5.0, 0.0), MARGIN));
+
+        let p4 = c * p3;
+        assert!(p4.approx_eq(&Tuple::point(15.0, 0.0, 7.0), MARGIN));
+    }
+
+    #[test]
+    fn chained_transformations_must_be_applied_in_reverse_order() {
+        let p = Tuple::point(1.0, 0.0, 1.0);
+        let a = Transform::rotation_x(PI / 2.0);
+        let b = Transform::scaling(5.0, 5.0, 5.0);
+        let c = Transform::translation(10.0, 5.0, 7.0);
+
+        let t = c * b * a;
+
+        assert!((t * p).approx_eq(&Tuple::point(15.0, 0.0, 7.0), MARGIN));
+    }
+
+    #[test]
+    fn fluent_api() {
+        let rx = Transform::rotation_x(PI / 2.0);
+        let ry = Transform::rotation_y(PI / 3.0);
+        let rz = Transform::rotation_z(PI / 4.0);
+        let s = Transform::scaling(5.0, 5.0, 5.0);
+        let sh = Transform::shearing(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+        let t = Transform::translation(10.0, 5.0, 7.0);
+
+        let fluent_things = Transform::identity()
+            .rotate_x(PI / 2.0)
+            .rotate_y(PI / 3.0)
+            .rotate_z(PI / 4.0)
+            .scale(5.0, 5.0, 5.0)
+            .shear(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+            .translate(10.0, 5.0, 7.0);
+        let individual_things = t * sh * s * rz * ry * rx;
+
+        assert!(fluent_things.approx_eq(&individual_things, MARGIN));
     }
 }

@@ -169,9 +169,7 @@ impl<'a, M: Copy + Default, F: Copy + ApproxEq<Margin = M>> ApproxEq for &'a Mat
 
 #[cfg(test)]
 mod tests {
-    use float_cmp::F64Margin;
-
-    use crate::tuple::Tuple;
+    use crate::{tuple::Tuple, MARGIN};
 
     use super::*;
 
@@ -475,10 +473,7 @@ mod tests {
                 vec![-0.07895, -0.22368, -0.05263, 0.19737],
                 vec![-0.52256, -0.81391, -0.30075, 0.30639],
             ]),
-            F64Margin {
-                ulps: 2,
-                epsilon: 0.00001
-            }
+            MARGIN
         ));
     }
 
@@ -498,10 +493,7 @@ mod tests {
                 vec![0.35897, 0.35897, 0.43590, 0.92308,],
                 vec![-0.69231, -0.69231, -0.76923, -1.92308],
             ]),
-            F64Margin {
-                ulps: 2,
-                epsilon: 0.00001
-            }
+            MARGIN
         ));
     }
 
@@ -520,10 +512,7 @@ mod tests {
                 vec![-0.02901, -0.14630, -0.10926, 0.12963,],
                 vec![0.17778, 0.06667, -0.26667, 0.33333],
             ]),
-            F64Margin {
-                ulps: 2,
-                epsilon: 0.00001
-            }
+            MARGIN
         ));
     }
 
@@ -543,12 +532,6 @@ mod tests {
         ]);
         let c = a.clone() * b.clone();
 
-        assert!((c * b.inverse().unwrap()).approx_eq(
-            &a,
-            F64Margin {
-                ulps: 2,
-                epsilon: 0.00000000000001
-            }
-        ));
+        assert!((c * b.inverse().unwrap()).approx_eq(&a, MARGIN));
     }
 }
