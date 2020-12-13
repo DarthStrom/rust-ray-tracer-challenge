@@ -1,3 +1,4 @@
+use float_cmp::ApproxEq;
 use num_traits::{Float, FromPrimitive};
 use std::iter::Sum;
 use std::ops::{Add, Mul};
@@ -11,6 +12,36 @@ pub struct Transform<F> {
 }
 
 impl<F: Float + FromPrimitive + Sum> Transform<F> {
+    pub fn rotation_x(radians: F) -> Self {
+        let mut data = Matrix::identity();
+        data[1][1] = radians.cos();
+        data[1][2] = -radians.sin();
+        data[2][1] = radians.sin();
+        data[2][2] = radians.cos();
+
+        Self { data }
+    }
+
+    pub fn rotation_y(radians: F) -> Self {
+        let mut data = Matrix::identity();
+        data[0][0] = radians.cos();
+        data[0][2] = radians.sin();
+        data[2][0] = -radians.sin();
+        data[2][2] = radians.cos();
+
+        Self { data }
+    }
+
+    pub fn rotation_z(radians: F) -> Self {
+        let mut data = Matrix::identity();
+        data[0][0] = radians.cos();
+        data[0][1] = -radians.sin();
+        data[1][0] = radians.sin();
+        data[1][1] = radians.cos();
+
+        Self { data }
+    }
+
     pub fn scaling(x: F, y: F, z: F) -> Self {
         let mut data = Matrix::identity();
         data[0][0] = x;
@@ -44,9 +75,21 @@ impl<F: Float + FromPrimitive + Mul<Output = F> + Add<Output = F>> Mul<Tuple<F>>
     }
 }
 
+impl<'a, M: Copy + Default, F: Copy + ApproxEq<Margin = M>> ApproxEq for &'a Transform<F> {
+    type Margin = M;
+
+    fn approx_eq<T: Into<Self::Margin>>(self, other: Self, margin: T) -> bool {
+        let margin = margin.into();
+        self.data.approx_eq(&other.data, margin)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use float_cmp::F64Margin;
+
     use crate::tuple::Tuple;
+    use std::f64::consts::PI;
 
     use super::*;
 
@@ -106,5 +149,47 @@ mod tests {
         let p = Tuple::point(2.0, 3.0, 4.0);
 
         assert_eq!(transform * p, Tuple::point(-2.0, 3.0, 4.0));
+    }
+
+    #[test]
+    fn rotating_a_point_around_the_x_axis() {
+        let p = Tuple::point(0.0, 1.0, 0.0);
+        let half_quarter = Transform::rotation_x(PI / 4.0);
+        let full_quarter = Transform::rotation_x(PI / 2.0);
+
+        let sqrt2over2 = 2f64.sqrt() / 2.0;
+        assert!((half_quarter * p).approx_eq(
+            &Tuple::point(0.0, sqrt2over2, sqrt2over2),
+            F64Margin::default()
+        ));
+        assert!((full_quarter * p).approx_eq(&Tuple::point(0.0, 0.0, 1.0), F64Margin::default()));
+    }
+
+    #[test]
+    fn rotating_a_point_around_the_y_axis() {
+        let p = Tuple::point(0.0, 0.0, 1.0);
+        let half_quarter = Transform::rotation_y(PI / 4.0);
+        let full_quarter = Transform::rotation_y(PI / 2.0);
+
+        let sqrt2over2 = 2f64.sqrt() / 2.0;
+        assert!((half_quarter * p).approx_eq(
+            &Tuple::point(sqrt2over2, 0.0, sqrt2over2),
+            F64Margin::default()
+        ));
+        assert!((full_quarter * p).approx_eq(&Tuple::point(1.0, 0.0, 0.0), F64Margin::default()));
+    }
+
+    #[test]
+    fn rotating_a_point_around_the_z_axis() {
+        let p = Tuple::point(0.0, 1.0, 0.0);
+        let half_quarter = Transform::rotation_z(PI / 4.0);
+        let full_quarter = Transform::rotation_z(PI / 2.0);
+
+        let sqrt2over2 = 2f64.sqrt() / 2.0;
+        assert!((half_quarter * p).approx_eq(
+            &Tuple::point(-sqrt2over2, sqrt2over2, 0.0),
+            F64Margin::default()
+        ));
+        assert!((full_quarter * p).approx_eq(&Tuple::point(-1.0, 0.0, 0.0), F64Margin::default()));
     }
 }
