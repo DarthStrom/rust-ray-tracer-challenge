@@ -8,6 +8,7 @@ use tuple::Tuple;
 mod canvas;
 mod color;
 mod matrix;
+mod ray;
 mod tuple;
 
 pub const MARGIN: F64Margin = F64Margin {
