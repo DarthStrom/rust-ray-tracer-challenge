@@ -6,6 +6,7 @@ use tuple::Tuple;
 
 mod canvas;
 mod color;
+mod matrix;
 mod tuple;
 
 fn main() {
