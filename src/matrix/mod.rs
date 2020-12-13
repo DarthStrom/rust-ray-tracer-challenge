@@ -4,7 +4,7 @@ use num_traits::{Float, FromPrimitive};
 use std::ops::{Add, Index, Mul};
 use std::{iter::Sum, ops::IndexMut};
 
-mod transformations;
+mod transform;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Matrix<T> {
