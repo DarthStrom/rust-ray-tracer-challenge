@@ -51,6 +51,18 @@ impl<F: Float + FromPrimitive + Sum> Transform<F> {
         Self { data }
     }
 
+    pub fn shearing(xy: F, xz: F, yx: F, yz: F, zx: F, zy: F) -> Self {
+        let mut data = Matrix::identity();
+        data[0][1] = xy;
+        data[0][2] = xz;
+        data[1][0] = yx;
+        data[1][2] = yz;
+        data[2][0] = zx;
+        data[2][1] = zy;
+
+        Self { data }
+    }
+
     pub fn translation(x: F, y: F, z: F) -> Self {
         let mut data = Matrix::identity();
         data[0][3] = x;
@@ -191,5 +203,53 @@ mod tests {
             F64Margin::default()
         ));
         assert!((full_quarter * p).approx_eq(&Tuple::point(-1.0, 0.0, 0.0), F64Margin::default()));
+    }
+
+    #[test]
+    fn shearing_x_in_proportion_to_y() {
+        let transform = Transform::shearing(1.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let p = Tuple::point(2.0, 3.0, 4.0);
+
+        assert_eq!(transform * p, Tuple::point(5.0, 3.0, 4.0));
+    }
+
+    #[test]
+    fn shearing_x_in_proportion_to_z() {
+        let transform = Transform::shearing(0.0, 1.0, 0.0, 0.0, 0.0, 0.0);
+        let p = Tuple::point(2.0, 3.0, 4.0);
+
+        assert_eq!(transform * p, Tuple::point(6.0, 3.0, 4.0));
+    }
+
+    #[test]
+    fn shearing_y_in_proportion_to_x() {
+        let transform = Transform::shearing(0.0, 0.0, 1.0, 0.0, 0.0, 0.0);
+        let p = Tuple::point(2.0, 3.0, 4.0);
+
+        assert_eq!(transform * p, Tuple::point(2.0, 5.0, 4.0));
+    }
+
+    #[test]
+    fn shearing_y_in_proportion_to_z() {
+        let transform = Transform::shearing(0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+        let p = Tuple::point(2.0, 3.0, 4.0);
+
+        assert_eq!(transform * p, Tuple::point(2.0, 7.0, 4.0));
+    }
+
+    #[test]
+    fn shearing_z_in_proportion_to_x() {
+        let transform = Transform::shearing(0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+        let p = Tuple::point(2.0, 3.0, 4.0);
+
+        assert_eq!(transform * p, Tuple::point(2.0, 3.0, 6.0));
+    }
+
+    #[test]
+    fn shearing_z_in_proportion_to_y() {
+        let transform = Transform::shearing(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+        let p = Tuple::point(2.0, 3.0, 4.0);
+
+        assert_eq!(transform * p, Tuple::point(2.0, 3.0, 7.0));
     }
 }
