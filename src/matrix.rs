@@ -25,6 +25,19 @@ impl<F: Float + FromPrimitive> Matrix<F> {
             ],
         }
     }
+
+    pub fn transposed(&self) -> Self {
+        let mut result = vec![];
+        for _ in 0..self[0].len() {
+            result.push(vec![]);
+        }
+        for y in self.data.iter() {
+            for (i, &x) in y.iter().enumerate() {
+                result[i].push(x)
+            }
+        }
+        Self { data: result }
+    }
 }
 
 impl<T> Index<usize> for Matrix<T> {
@@ -202,5 +215,32 @@ mod tests {
         ]);
 
         assert_eq!(a.clone() * Matrix::identity(), a);
+    }
+
+    #[test]
+    fn transposing_a_matrix() {
+        let a = Matrix::new(vec![
+            vec![0.0, 9.0, 3.0, 0.0],
+            vec![9.0, 8.0, 0.0, 8.0],
+            vec![1.0, 8.0, 5.0, 3.0],
+            vec![0.0, 0.0, 5.0, 8.0],
+        ]);
+
+        assert_eq!(
+            a.transposed(),
+            Matrix::new(vec![
+                vec![0.0, 9.0, 1.0, 0.0],
+                vec![9.0, 8.0, 8.0, 0.0],
+                vec![3.0, 0.0, 5.0, 5.0],
+                vec![0.0, 8.0, 3.0, 8.0],
+            ])
+        )
+    }
+
+    #[test]
+    fn transposing_the_identity_matrix() {
+        let a: Matrix<f64> = Matrix::identity().transposed();
+
+        assert_eq!(a, Matrix::identity());
     }
 }
