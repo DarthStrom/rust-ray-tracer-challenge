@@ -3,14 +3,27 @@ use num_traits::{Float, FromPrimitive};
 use std::iter::Sum;
 use std::ops::{Add, Index, Mul};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Matrix<T> {
     data: Vec<Vec<T>>,
 }
 
-impl<T> Matrix<T> {
-    pub fn new(data: Vec<Vec<T>>) -> Self {
+impl<F: Float + FromPrimitive> Matrix<F> {
+    pub fn new(data: Vec<Vec<F>>) -> Self {
         Self { data }
+    }
+
+    pub fn identity() -> Self {
+        let one = F::from_f64(1.0).unwrap();
+        let zero = F::from_f64(0.0).unwrap();
+        Self {
+            data: vec![
+                vec![one, zero, zero, zero],
+                vec![zero, one, zero, zero],
+                vec![zero, zero, one, zero],
+                vec![zero, zero, zero, one],
+            ],
+        }
     }
 }
 
@@ -177,5 +190,17 @@ mod tests {
         let b = Tuple::new(1.0, 2.0, 3.0, 1.0);
 
         assert_eq!(a * b, Tuple::new(18.0, 24.0, 33.0, 1.0));
+    }
+
+    #[test]
+    fn multiplying_by_identity_matrix() {
+        let a = Matrix::new(vec![
+            vec![0.0, 1.0, 2.0, 4.0],
+            vec![1.0, 2.0, 4.0, 8.0],
+            vec![2.0, 4.0, 8.0, 16.0],
+            vec![4.0, 8.0, 16.0, 32.0],
+        ]);
+
+        assert_eq!(a.clone() * Matrix::identity(), a);
     }
 }
