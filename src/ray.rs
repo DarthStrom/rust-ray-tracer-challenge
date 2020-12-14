@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use crate::tuple::{dot, Tuple};
 
 #[derive(Debug, PartialEq)]
@@ -16,13 +18,51 @@ impl Ray {
     }
 }
 
+#[derive(Debug)]
+pub struct Intersection<'a> {
+    t: f64,
+    object: &'a Sphere,
+}
+
+impl<'a> Intersection<'a> {
+    fn new(t: f64, object: &'a Sphere) -> Self {
+        Self { t, object }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Intersections<'a> {
+    data: Vec<Intersection<'a>>,
+}
+
+impl<'a> Intersections<'a> {
+    pub fn new(intersections: Vec<Intersection<'a>>) -> Self {
+        Self {
+            data: intersections,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+}
+
+impl<'a> Index<usize> for Intersections<'a> {
+    type Output = Intersection<'a>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Sphere {
     center: Tuple,
     radius: f64,
 }
 
 impl Sphere {
-    pub fn intersect(&self, ray: &Ray) -> Vec<f64> {
+    pub fn intersect(&self, ray: &Ray) -> Intersections {
         let sphere_to_ray = ray.origin - self.center;
 
         let a = dot(&ray.direction, &ray.direction);
@@ -32,13 +72,16 @@ impl Sphere {
         let discriminant = b.powf(2.0) - 4.0 * a * c;
 
         if discriminant < 0.0 {
-            return vec![];
+            return Intersections::default();
         }
 
         let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
         let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
 
-        vec![t1, t2]
+        Intersections::new(vec![
+            Intersection::new(t1, self),
+            Intersection::new(t2, self),
+        ])
     }
 }
 
@@ -86,8 +129,8 @@ mod tests {
         let xs = s.intersect(&r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0], 4.0);
-        assert_eq!(xs[1], 6.0);
+        assert_eq!(xs[0].t, 4.0);
+        assert_eq!(xs[1].t, 6.0);
     }
 
     #[test]
@@ -98,8 +141,8 @@ mod tests {
         let xs = s.intersect(&r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0], 5.0);
-        assert_eq!(xs[1], 5.0);
+        assert_eq!(xs[0].t, 5.0);
+        assert_eq!(xs[1].t, 5.0);
     }
 
     #[test]
@@ -119,8 +162,8 @@ mod tests {
         let xs = s.intersect(&r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0], -1.0);
-        assert_eq!(xs[1], 1.0);
+        assert_eq!(xs[0].t, -1.0);
+        assert_eq!(xs[1].t, 1.0);
     }
 
     #[test]
@@ -131,7 +174,30 @@ mod tests {
         let xs = s.intersect(&r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0], -6.0);
-        assert_eq!(xs[1], -4.0);
+        assert_eq!(xs[0].t, -6.0);
+        assert_eq!(xs[1].t, -4.0);
+    }
+
+    #[test]
+    fn intersection_encapsulates_t_and_object() {
+        let s = Sphere::default();
+
+        let i = Intersection::new(3.5, &s);
+
+        assert_eq!(i.t, 3.5);
+        assert_eq!(i.object, &s);
+    }
+
+    #[test]
+    fn aggregating_intersections() {
+        let s = Sphere::default();
+        let i1 = Intersection::new(1.0, &s);
+        let i2 = Intersection::new(2.0, &s);
+
+        let xs = Intersections::new(vec![i1, i2]);
+
+        assert_eq!(xs.len(), 2);
+        assert_eq!(xs[0].t, 1.0);
+        assert_eq!(xs[1].t, 2.0);
     }
 }
