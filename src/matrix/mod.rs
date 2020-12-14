@@ -1,22 +1,21 @@
 use crate::tuple::Tuple;
-use float_cmp::ApproxEq;
-use num_traits::{Float, FromPrimitive};
-use std::ops::{Add, Index, Mul};
-use std::{iter::Sum, ops::IndexMut};
+use float_cmp::{ApproxEq, F64Margin};
+use std::ops::IndexMut;
+use std::ops::{Index, Mul};
 
 mod transform;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Matrix<T> {
-    data: Vec<Vec<T>>,
+pub struct Matrix {
+    data: Vec<Vec<f64>>,
 }
 
-impl<F: Float + FromPrimitive + Sum> Matrix<F> {
-    pub fn new(data: Vec<Vec<F>>) -> Self {
+impl Matrix {
+    pub fn new(data: Vec<Vec<f64>>) -> Self {
         Self { data }
     }
 
-    pub fn cofactor(&self, row: usize, col: usize) -> F {
+    pub fn cofactor(&self, row: usize, col: usize) -> f64 {
         if (row + col) % 2 == 0 {
             self.minor(row, col)
         } else {
@@ -24,7 +23,7 @@ impl<F: Float + FromPrimitive + Sum> Matrix<F> {
         }
     }
 
-    pub fn determinant(&self) -> F {
+    pub fn determinant(&self) -> f64 {
         if self.data.len() == 2 && self.data[0].len() == 2 {
             self.data[0][0] * self.data[1][1] - self.data[0][1] * self.data[1][0]
         } else {
@@ -37,14 +36,12 @@ impl<F: Float + FromPrimitive + Sum> Matrix<F> {
     }
 
     pub fn identity() -> Self {
-        let one = F::from_f64(1.0).unwrap();
-        let zero = F::from_f64(0.0).unwrap();
         Self {
             data: vec![
-                vec![one, zero, zero, zero],
-                vec![zero, one, zero, zero],
-                vec![zero, zero, one, zero],
-                vec![zero, zero, zero, one],
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 0.0, 1.0],
             ],
         }
     }
@@ -68,10 +65,10 @@ impl<F: Float + FromPrimitive + Sum> Matrix<F> {
     }
 
     pub fn is_invertible(&self) -> bool {
-        self.determinant() != F::from_f64(0.0).unwrap()
+        self.determinant() != 0.0
     }
 
-    pub fn minor(&self, row: usize, col: usize) -> F {
+    pub fn minor(&self, row: usize, col: usize) -> f64 {
         self.submatrix(row, col).determinant()
     }
 
@@ -105,21 +102,21 @@ impl<F: Float + FromPrimitive + Sum> Matrix<F> {
     }
 }
 
-impl<T> Index<usize> for Matrix<T> {
-    type Output = Vec<T>;
+impl Index<usize> for Matrix {
+    type Output = Vec<f64>;
 
     fn index(&self, i: usize) -> &Self::Output {
         &self.data[i]
     }
 }
 
-impl<T> IndexMut<usize> for Matrix<T> {
-    fn index_mut(&mut self, i: usize) -> &mut Vec<T> {
+impl IndexMut<usize> for Matrix {
+    fn index_mut(&mut self, i: usize) -> &mut Vec<f64> {
         &mut self.data[i]
     }
 }
 
-impl<T: Copy + Clone + Sum + Mul<Output = T>> Mul for Matrix<T> {
+impl Mul for Matrix {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
@@ -141,10 +138,10 @@ impl<T: Copy + Clone + Sum + Mul<Output = T>> Mul for Matrix<T> {
     }
 }
 
-impl<F: Float + FromPrimitive + Mul<Output = F> + Add<Output = F>> Mul<Tuple<F>> for Matrix<F> {
-    type Output = Tuple<F>;
+impl Mul<Tuple> for Matrix {
+    type Output = Tuple;
 
-    fn mul(self, rhs: Tuple<F>) -> Self::Output {
+    fn mul(self, rhs: Tuple) -> Self::Output {
         Tuple::new(
             self[0][0] * rhs.x + self[0][1] * rhs.y + self[0][2] * rhs.z + self[0][3] * rhs.w,
             self[1][0] * rhs.x + self[1][1] * rhs.y + self[1][2] * rhs.z + self[1][3] * rhs.w,
@@ -154,8 +151,8 @@ impl<F: Float + FromPrimitive + Mul<Output = F> + Add<Output = F>> Mul<Tuple<F>>
     }
 }
 
-impl<'a, M: Copy + Default, F: Copy + ApproxEq<Margin = M>> ApproxEq for &'a Matrix<F> {
-    type Margin = M;
+impl<'a> ApproxEq for &'a Matrix {
+    type Margin = F64Margin;
 
     fn approx_eq<T: Into<Self::Margin>>(self, other: Self, margin: T) -> bool {
         let margin = margin.into();
@@ -323,7 +320,7 @@ mod tests {
 
     #[test]
     fn transposing_the_identity_matrix() {
-        let a: Matrix<f64> = Matrix::identity().transposed();
+        let a = Matrix::identity().transposed();
 
         assert_eq!(a, Matrix::identity());
     }

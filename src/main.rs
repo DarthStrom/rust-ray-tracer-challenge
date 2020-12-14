@@ -40,13 +40,13 @@ fn main() {
 }
 
 struct Projectile {
-    position: Tuple<f32>,
-    velocity: Tuple<f32>,
+    position: Tuple,
+    velocity: Tuple,
 }
 
 struct Environment {
-    gravity: Tuple<f32>,
-    wind: Tuple<f32>,
+    gravity: Tuple,
+    wind: Tuple,
 }
 
 fn tick(environment: &Environment, projectile: &Projectile) -> Projectile {

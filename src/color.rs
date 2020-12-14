@@ -1,14 +1,13 @@
 use crate::tuple::Tuple;
-use float_cmp::ApproxEq;
-use num_traits::{Float, FromPrimitive};
+use float_cmp::{ApproxEq, F64Margin};
 use std::ops::{Add, Mul, Sub};
 
 #[derive(Copy, Clone, Debug, Default)]
-pub struct Color<F> {
-    tuple: Tuple<F>,
+pub struct Color {
+    tuple: Tuple,
 }
 
-fn hadamard_product<F: Float + FromPrimitive>(c1: &Color<F>, c2: &Color<F>) -> Color<F> {
+fn hadamard_product(c1: &Color, c2: &Color) -> Color {
     Color::new(
         c1.red() * c2.red(),
         c1.green() * c2.green(),
@@ -16,28 +15,28 @@ fn hadamard_product<F: Float + FromPrimitive>(c1: &Color<F>, c2: &Color<F>) -> C
     )
 }
 
-impl<F: Float + FromPrimitive> Color<F> {
-    pub fn new(red: F, green: F, blue: F) -> Self {
+impl Color {
+    pub fn new(red: f64, green: f64, blue: f64) -> Self {
         Self {
             tuple: Tuple::vector(red, green, blue),
         }
     }
 
-    pub fn red(&self) -> F {
+    pub fn red(&self) -> f64 {
         self.tuple.x
     }
 
-    pub fn green(&self) -> F {
+    pub fn green(&self) -> f64 {
         self.tuple.y
     }
 
-    pub fn blue(&self) -> F {
+    pub fn blue(&self) -> f64 {
         self.tuple.z
     }
 }
 
-impl<'a, M: Copy + Default, F: Copy + ApproxEq<Margin = M>> ApproxEq for &'a Color<F> {
-    type Margin = M;
+impl<'a> ApproxEq for &'a Color {
+    type Margin = F64Margin;
 
     fn approx_eq<T: Into<Self::Margin>>(self, other: Self, margin: T) -> bool {
         let margin = margin.into();
@@ -45,7 +44,7 @@ impl<'a, M: Copy + Default, F: Copy + ApproxEq<Margin = M>> ApproxEq for &'a Col
     }
 }
 
-impl<F: Add<Output = F>> Add for Color<F> {
+impl Add for Color {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -55,7 +54,7 @@ impl<F: Add<Output = F>> Add for Color<F> {
     }
 }
 
-impl<F: Sub<Output = F>> Sub for Color<F> {
+impl Sub for Color {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -65,17 +64,17 @@ impl<F: Sub<Output = F>> Sub for Color<F> {
     }
 }
 
-impl<F: Clone + Copy + Mul<Output = F>> Mul<F> for Color<F> {
+impl Mul<f64> for Color {
     type Output = Self;
 
-    fn mul(self, rhs: F) -> Self::Output {
+    fn mul(self, rhs: f64) -> Self::Output {
         Self {
             tuple: self.tuple * rhs,
         }
     }
 }
 
-impl<F: Float + FromPrimitive> Mul for Color<F> {
+impl Mul for Color {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {

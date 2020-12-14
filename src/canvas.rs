@@ -3,7 +3,7 @@ use crate::color::Color;
 pub struct Canvas {
     pub width: usize,
     pub height: usize,
-    pixels: Vec<Color<f64>>,
+    pixels: Vec<Color>,
 }
 
 impl Canvas {
@@ -18,11 +18,11 @@ impl Canvas {
         }
     }
 
-    pub fn pixel_at(&self, x: usize, y: usize) -> Color<f64> {
+    pub fn pixel_at(&self, x: usize, y: usize) -> Color {
         self.pixels[x + y * self.width]
     }
 
-    pub fn write_pixel(&mut self, x: usize, y: usize, color: Color<f64>) {
+    pub fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
         if x < self.width && y < self.height {
             self.pixels[x + y * self.width] = color
         }

@@ -1,19 +1,15 @@
-use float_cmp::ApproxEq;
-use num_traits::{float::Float, FromPrimitive};
+use float_cmp::{ApproxEq, F64Margin};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Tuple<F> {
-    pub x: F,
-    pub y: F,
-    pub z: F,
-    pub w: F,
+pub struct Tuple {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub w: f64,
 }
 
-pub fn cross<F: Copy + Clone + Float + FromPrimitive + Mul<Output = F>>(
-    a: &Tuple<F>,
-    b: &Tuple<F>,
-) -> Tuple<F> {
+pub fn cross(a: &Tuple, b: &Tuple) -> Tuple {
     if !a.is_vector() || !b.is_vector() {
         panic!("cross product on non-vector")
     }
@@ -25,29 +21,29 @@ pub fn cross<F: Copy + Clone + Float + FromPrimitive + Mul<Output = F>>(
     )
 }
 
-pub fn dot<F: Copy + Clone + Add<Output = F> + Mul<Output = F>>(a: &Tuple<F>, b: &Tuple<F>) -> F {
+pub fn dot(a: &Tuple, b: &Tuple) -> f64 {
     a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
 }
 
-impl<F: Float + FromPrimitive> Tuple<F> {
-    pub fn point(x: F, y: F, z: F) -> Self {
-        Self::new(x, y, z, F::from_f64(1.0).unwrap())
+impl Tuple {
+    pub fn point(x: f64, y: f64, z: f64) -> Self {
+        Self::new(x, y, z, 1.0)
     }
 
-    pub fn vector(x: F, y: F, z: F) -> Self {
-        Self::new(x, y, z, F::from_f64(0.0).unwrap())
+    pub fn vector(x: f64, y: f64, z: f64) -> Self {
+        Self::new(x, y, z, 0.0)
     }
 
     pub fn is_point(&self) -> bool {
-        self.w == F::from_f64(1.0).unwrap()
+        self.w == 1.0
     }
 
     pub fn is_vector(&self) -> bool {
-        self.w == F::from_f64(0.0).unwrap()
+        self.w == 0.0
     }
 
-    pub fn magnitude(&self) -> F {
-        let two = F::from_f64(2.0).unwrap();
+    pub fn magnitude(&self) -> f64 {
+        let two = 2.0;
         (self.x.powf(two) + self.y.powf(two) + self.z.powf(two) + self.w.powf(two)).sqrt()
     }
 
@@ -61,12 +57,12 @@ impl<F: Float + FromPrimitive> Tuple<F> {
         }
     }
 
-    pub fn new(x: F, y: F, z: F, w: F) -> Self {
+    pub fn new(x: f64, y: f64, z: f64, w: f64) -> Self {
         Self { x, y, z, w }
     }
 }
 
-impl<T: Add<Output = T>> Add for Tuple<T> {
+impl Add for Tuple {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -79,7 +75,7 @@ impl<T: Add<Output = T>> Add for Tuple<T> {
     }
 }
 
-impl<T: Sub<Output = T>> Sub for Tuple<T> {
+impl Sub for Tuple {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -92,10 +88,10 @@ impl<T: Sub<Output = T>> Sub for Tuple<T> {
     }
 }
 
-impl<T: Clone + Copy + Mul<Output = T>> Mul<T> for Tuple<T> {
-    type Output = Tuple<T>;
+impl Mul<f64> for Tuple {
+    type Output = Tuple;
 
-    fn mul(self, rhs: T) -> Self::Output {
+    fn mul(self, rhs: f64) -> Self::Output {
         Tuple {
             x: self.x * rhs,
             y: self.y * rhs,
@@ -105,10 +101,10 @@ impl<T: Clone + Copy + Mul<Output = T>> Mul<T> for Tuple<T> {
     }
 }
 
-impl<T: Clone + Copy + Div<Output = T>> Div<T> for Tuple<T> {
-    type Output = Tuple<T>;
+impl Div<f64> for Tuple {
+    type Output = Tuple;
 
-    fn div(self, rhs: T) -> Self::Output {
+    fn div(self, rhs: f64) -> Self::Output {
         Tuple {
             x: self.x / rhs,
             y: self.y / rhs,
@@ -118,7 +114,7 @@ impl<T: Clone + Copy + Div<Output = T>> Div<T> for Tuple<T> {
     }
 }
 
-impl<T: Default + Neg<Output = T> + Sub<Output = T>> Neg for Tuple<T> {
+impl Neg for Tuple {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
@@ -126,8 +122,8 @@ impl<T: Default + Neg<Output = T> + Sub<Output = T>> Neg for Tuple<T> {
     }
 }
 
-impl<'a, M: Copy + Default, F: Copy + ApproxEq<Margin = M>> ApproxEq for &'a Tuple<F> {
-    type Margin = M;
+impl<'a> ApproxEq for &'a Tuple {
+    type Margin = F64Margin;
 
     fn approx_eq<T: Into<Self::Margin>>(self, other: Self, margin: T) -> bool {
         let margin = margin.into();

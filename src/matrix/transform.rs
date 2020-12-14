@@ -1,49 +1,47 @@
-use float_cmp::ApproxEq;
-use num_traits::{Float, FromPrimitive};
-use std::iter::Sum;
-use std::ops::{Add, Mul};
+use float_cmp::{ApproxEq, F64Margin};
+use std::ops::Mul;
 
 use crate::tuple::Tuple;
 
 use super::Matrix;
 
 #[derive(Debug)]
-pub struct Transform<F> {
-    data: Matrix<F>,
+pub struct Transform {
+    data: Matrix,
 }
 
-impl<F: Float + FromPrimitive + Sum> Transform<F> {
+impl Transform {
     pub fn identity() -> Self {
         Self {
             data: Matrix::identity(),
         }
     }
 
-    pub fn rotation_x(radians: F) -> Self {
+    pub fn rotation_x(radians: f64) -> Self {
         Transform::identity().rotate_x(radians)
     }
 
-    pub fn rotation_y(radians: F) -> Self {
+    pub fn rotation_y(radians: f64) -> Self {
         Transform::identity().rotate_y(radians)
     }
 
-    pub fn rotation_z(radians: F) -> Self {
+    pub fn rotation_z(radians: f64) -> Self {
         Transform::identity().rotate_z(radians)
     }
 
-    pub fn scaling(x: F, y: F, z: F) -> Self {
+    pub fn scaling(x: f64, y: f64, z: f64) -> Self {
         Transform::identity().scale(x, y, z)
     }
 
-    pub fn shearing(xy: F, xz: F, yx: F, yz: F, zx: F, zy: F) -> Self {
+    pub fn shearing(xy: f64, xz: f64, yx: f64, yz: f64, zx: f64, zy: f64) -> Self {
         Transform::identity().shear(xy, xz, yx, yz, zx, zy)
     }
 
-    pub fn translation(x: F, y: F, z: F) -> Self {
+    pub fn translation(x: f64, y: f64, z: f64) -> Self {
         Transform::identity().translate(x, y, z)
     }
 
-    pub fn rotate_x(&self, radians: F) -> Self {
+    pub fn rotate_x(&self, radians: f64) -> Self {
         let mut data = Matrix::identity();
         data[1][1] = radians.cos();
         data[1][2] = -radians.sin();
@@ -55,7 +53,7 @@ impl<F: Float + FromPrimitive + Sum> Transform<F> {
         }
     }
 
-    pub fn rotate_y(&self, radians: F) -> Self {
+    pub fn rotate_y(&self, radians: f64) -> Self {
         let mut data = Matrix::identity();
         data[0][0] = radians.cos();
         data[0][2] = radians.sin();
@@ -67,7 +65,7 @@ impl<F: Float + FromPrimitive + Sum> Transform<F> {
         }
     }
 
-    pub fn rotate_z(&self, radians: F) -> Self {
+    pub fn rotate_z(&self, radians: f64) -> Self {
         let mut data = Matrix::identity();
         data[0][0] = radians.cos();
         data[0][1] = -radians.sin();
@@ -79,7 +77,7 @@ impl<F: Float + FromPrimitive + Sum> Transform<F> {
         }
     }
 
-    pub fn scale(&self, x: F, y: F, z: F) -> Self {
+    pub fn scale(&self, x: f64, y: f64, z: f64) -> Self {
         let mut data = Matrix::identity();
         data[0][0] = x;
         data[1][1] = y;
@@ -90,7 +88,7 @@ impl<F: Float + FromPrimitive + Sum> Transform<F> {
         }
     }
 
-    pub fn shear(&self, xy: F, xz: F, yx: F, yz: F, zx: F, zy: F) -> Self {
+    pub fn shear(&self, xy: f64, xz: f64, yx: f64, yz: f64, zx: f64, zy: f64) -> Self {
         let mut data = Matrix::identity();
         data[0][1] = xy;
         data[0][2] = xz;
@@ -104,7 +102,7 @@ impl<F: Float + FromPrimitive + Sum> Transform<F> {
         }
     }
 
-    pub fn translate(&self, x: F, y: F, z: F) -> Self {
+    pub fn translate(&self, x: f64, y: f64, z: f64) -> Self {
         let mut data = Matrix::identity();
         data[0][3] = x;
         data[1][3] = y;
@@ -115,14 +113,14 @@ impl<F: Float + FromPrimitive + Sum> Transform<F> {
         }
     }
 
-    pub fn inverse(&self) -> Result<Transform<F>, String> {
+    pub fn inverse(&self) -> Result<Transform, String> {
         Ok(Transform {
             data: self.data.inverse()?,
         })
     }
 }
 
-impl<T: Copy + Clone + Sum + Mul<Output = T>> Mul for Transform<T> {
+impl Mul for Transform {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
@@ -132,16 +130,16 @@ impl<T: Copy + Clone + Sum + Mul<Output = T>> Mul for Transform<T> {
     }
 }
 
-impl<F: Float + FromPrimitive + Mul<Output = F> + Add<Output = F>> Mul<Tuple<F>> for Transform<F> {
-    type Output = Tuple<F>;
+impl Mul<Tuple> for Transform {
+    type Output = Tuple;
 
-    fn mul(self, rhs: Tuple<F>) -> Self::Output {
+    fn mul(self, rhs: Tuple) -> Self::Output {
         self.data * rhs
     }
 }
 
-impl<'a, M: Copy + Default, F: Copy + ApproxEq<Margin = M>> ApproxEq for &'a Transform<F> {
-    type Margin = M;
+impl<'a> ApproxEq for &'a Transform {
+    type Margin = F64Margin;
 
     fn approx_eq<T: Into<Self::Margin>>(self, other: Self, margin: T) -> bool {
         let margin = margin.into();

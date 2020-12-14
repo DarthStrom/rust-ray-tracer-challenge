@@ -1,58 +1,48 @@
-use num_traits::{Float, FromPrimitive};
-use std::ops::{Add, Mul, Sub};
-
 use crate::tuple::{dot, Tuple};
 
 #[derive(Debug, PartialEq)]
-pub struct Ray<F> {
-    origin: Tuple<F>,
-    direction: Tuple<F>,
+pub struct Ray {
+    origin: Tuple,
+    direction: Tuple,
 }
 
-impl<F: Float + FromPrimitive> Ray<F> {
-    pub fn new(origin: Tuple<F>, direction: Tuple<F>) -> Self {
+impl Ray {
+    pub fn new(origin: Tuple, direction: Tuple) -> Self {
         Self { origin, direction }
     }
 
-    pub fn position(&self, t: F) -> Tuple<F> {
+    pub fn position(&self, t: f64) -> Tuple {
         self.origin + self.direction * t
     }
 }
 
-pub struct Sphere<F> {
-    center: Tuple<F>,
-    radius: F,
+pub struct Sphere {
+    center: Tuple,
+    radius: f64,
 }
 
-impl<
-        F: Float + FromPrimitive + Add<Output = F> + Sub<Output = F> + Copy + Mul<Output = F> + Mul,
-    > Sphere<F>
-{
-    pub fn intersect(&self, ray: &Ray<F>) -> Vec<F> {
+impl Sphere {
+    pub fn intersect(&self, ray: &Ray) -> Vec<f64> {
         let sphere_to_ray = ray.origin - self.center;
 
-        let zero = F::from_f64(0.0).unwrap();
-        let one = F::from_f64(1.0).unwrap();
-        let two = F::from_f64(2.0).unwrap();
-        let four = F::from_f64(4.0).unwrap();
         let a = dot(&ray.direction, &ray.direction);
-        let b = two * dot(&ray.direction, &sphere_to_ray);
-        let c = dot(&sphere_to_ray, &sphere_to_ray) - one;
+        let b = 2.0 * dot(&ray.direction, &sphere_to_ray);
+        let c = dot(&sphere_to_ray, &sphere_to_ray) - 1.0;
 
-        let discriminant = b.powf(two) - four * a * c;
+        let discriminant = b.powf(2.0) - 4.0 * a * c;
 
-        if discriminant < zero {
+        if discriminant < 0.0 {
             return vec![];
         }
 
-        let t1 = (-b - discriminant.sqrt()) / (two * a);
-        let t2 = (-b + discriminant.sqrt()) / (two * a);
+        let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
+        let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
 
         vec![t1, t2]
     }
 }
 
-impl Default for Sphere<f64> {
+impl Default for Sphere {
     fn default() -> Self {
         Self {
             center: Tuple::point(0.0, 0.0, 0.0),
