@@ -9,6 +9,7 @@ mod canvas;
 mod color;
 mod matrix;
 mod ray;
+mod sphere;
 mod tuple;
 
 pub const MARGIN: F64Margin = F64Margin {

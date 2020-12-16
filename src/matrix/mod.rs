@@ -3,7 +3,7 @@ use float_cmp::{ApproxEq, F64Margin};
 use std::ops::IndexMut;
 use std::ops::{Index, Mul};
 
-mod transform;
+pub mod transform;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Matrix {

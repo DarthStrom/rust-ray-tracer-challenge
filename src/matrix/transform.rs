@@ -5,7 +5,7 @@ use crate::tuple::Tuple;
 
 use super::Matrix;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Transform {
     data: Matrix,
 }
@@ -117,6 +117,10 @@ impl Transform {
         Ok(Transform {
             data: self.data.inverse()?,
         })
+    }
+
+    pub fn is_invertible(&self) -> bool {
+        self.data.is_invertible()
     }
 }
 
