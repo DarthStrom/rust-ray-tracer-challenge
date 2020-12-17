@@ -3,6 +3,8 @@ use std::fs;
 use canvas::Canvas;
 use color::Color;
 use float_cmp::F64Margin;
+use ray::Ray;
+use sphere::Sphere;
 use tuple::Tuple;
 
 mod canvas;
@@ -18,41 +20,30 @@ pub const MARGIN: F64Margin = F64Margin {
 };
 
 fn main() {
-    let mut p = Projectile {
-        position: Tuple::point(0.0, 1.0, 0.0),
-        velocity: Tuple::vector(1.0, 1.0, 0.0).normalized() * 11.25,
-    };
-    let e = Environment {
-        gravity: Tuple::vector(0.0, -0.1, 0.0),
-        wind: Tuple::vector(-0.01, 0.0, 0.0),
-    };
+    let ray_origin = Tuple::point(0.0, 0.0, -5.0);
+    let wall_z = 10.0;
+    let wall_size = 7.0;
+    let canvas_pixels = 100;
+    let pixel_size = wall_size / canvas_pixels as f64;
+    let half = wall_size / 2.0;
 
-    let mut c = Canvas::new(900, 550);
-    while p.position.y > 0.0 {
-        p = tick(&e, &p);
-        println!("writing to {},{}", p.position.x, p.position.y);
-        c.write_pixel(
-            p.position.x as usize,
-            c.height - p.position.y as usize,
-            Color::new(0.5, 0.5, 0.5),
-        );
+    let mut c = Canvas::new(canvas_pixels, canvas_pixels);
+    let color = Color::new(1.0, 0.0, 0.0);
+    let shape = Sphere::default();
+
+    for y in 0..canvas_pixels - 1 {
+        let world_y = half - pixel_size * y as f64;
+        for x in 0..canvas_pixels - 1 {
+            let world_x = -half + pixel_size * x as f64;
+
+            let position = Tuple::point(world_x, world_y, wall_z);
+            let r = Ray::new(ray_origin, (position - ray_origin).normalized());
+            let xs = shape.intersect(&r);
+            if xs.hit().is_some() {
+                c.write_pixel(x, y, color);
+            }
+        }
     }
+
     fs::write("canvas.ppm", c.to_ppm()).unwrap();
-}
-
-struct Projectile {
-    position: Tuple,
-    velocity: Tuple,
-}
-
-struct Environment {
-    gravity: Tuple,
-    wind: Tuple,
-}
-
-fn tick(environment: &Environment, projectile: &Projectile) -> Projectile {
-    Projectile {
-        position: projectile.position + projectile.velocity,
-        velocity: projectile.velocity + environment.gravity + environment.wind,
-    }
 }
