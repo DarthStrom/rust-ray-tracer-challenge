@@ -7,14 +7,14 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Sphere {
-    center: Tuple,
-    radius: f64,
-    transform: Transform,
-    material: Material,
+    pub center: Tuple,
+    pub radius: f64,
+    pub transform: Transform,
+    pub material: Material,
 }
 
 impl Sphere {
-    pub fn intersect(&self, ray: &Ray) -> Intersections {
+    pub fn intersect(&self, ray: Ray) -> Intersections {
         let ray = if self.transform.is_invertible() {
             ray.transform(self.transform.inverse().unwrap())
         } else {
@@ -23,9 +23,9 @@ impl Sphere {
 
         let sphere_to_ray = ray.origin - self.center;
 
-        let a = dot(&ray.direction, &ray.direction);
-        let b = 2.0 * dot(&ray.direction, &sphere_to_ray);
-        let c = dot(&sphere_to_ray, &sphere_to_ray) - 1.0;
+        let a = dot(ray.direction, ray.direction);
+        let b = 2.0 * dot(ray.direction, sphere_to_ray);
+        let c = dot(sphere_to_ray, sphere_to_ray) - 1.0;
 
         let discriminant = b.powf(2.0) - 4.0 * a * c;
 
@@ -42,8 +42,8 @@ impl Sphere {
         ])
     }
 
-    pub fn set_transform(&mut self, transform: &Transform) {
-        self.transform = transform.clone();
+    pub fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
     }
 
     pub fn normal_at(&self, world_point: Tuple) -> Result<Tuple, String> {
@@ -106,7 +106,7 @@ mod tests {
         let mut s = Sphere::default();
         let t = Transform::translation(2.0, 3.0, 4.0);
 
-        s.set_transform(&t);
+        s.set_transform(t.clone());
 
         assert_eq!(s.transform, t);
     }
@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn normal_on_a_translated_sphere() {
         let mut s = Sphere::default();
-        s.set_transform(&Transform::translation(0.0, 1.0, 0.0));
+        s.set_transform(Transform::translation(0.0, 1.0, 0.0));
 
         let n = s.normal_at(Tuple::point(0.0, 1.70711, -0.70711)).unwrap();
 
@@ -185,7 +185,7 @@ mod tests {
     fn normal_on_a_transformed_sphere() {
         let mut s = Sphere::default();
         let m = Transform::scaling(1.0, 0.5, 1.0) * Transform::rotation_z(PI / 5.0);
-        s.set_transform(&m);
+        s.set_transform(m);
 
         let n = s
             .normal_at(Tuple::point(0.0, sqrt_n_over_n(2), -sqrt_n_over_n(2)))

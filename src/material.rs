@@ -18,12 +18,12 @@ impl Material {
         let effective_color = self.color * light.intensity;
         let lightv = (light.position - point).normalize();
         let ambient = effective_color * self.ambient;
-        let light_dot_normal = dot(&lightv, &normalv);
+        let light_dot_normal = dot(lightv, normalv);
         let (diffuse, specular) = if light_behind_surface(light_dot_normal) {
             (Color::default(), Color::default())
         } else {
-            let reflectv = (-lightv).reflect(&normalv);
-            let reflect_dot_eye = dot(&reflectv, &eyev);
+            let reflectv = (-lightv).reflect(normalv);
+            let reflect_dot_eye = dot(reflectv, eyev);
             (
                 effective_color * self.diffuse * light_dot_normal,
                 if reflect_dot_eye <= 0.0 {

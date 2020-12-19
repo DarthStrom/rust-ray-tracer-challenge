@@ -26,7 +26,7 @@ impl Ray {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Intersection<'a> {
     t: f64,
     object: &'a Sphere,
@@ -102,7 +102,7 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, 4.0);
@@ -114,7 +114,7 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 1.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, 5.0);
@@ -126,7 +126,7 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 2.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let xs = s.intersect(r);
         assert_eq!(xs.len(), 0);
     }
 
@@ -135,7 +135,7 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, -1.0);
@@ -147,7 +147,7 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 0.0, 5.0), Tuple::vector(0.0, 0.0, 1.0));
         let s = Sphere::default();
 
-        let xs = s.intersect(&r);
+        let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, -6.0);
@@ -254,8 +254,8 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
         let mut s = Sphere::default();
 
-        s.set_transform(&Transform::scaling(2.0, 2.0, 2.0));
-        let xs = s.intersect(&r);
+        s.set_transform(Transform::scaling(2.0, 2.0, 2.0));
+        let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, 3.0);
@@ -267,8 +267,8 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
         let mut s = Sphere::default();
 
-        s.set_transform(&Transform::translation(5.0, 0.0, 0.0));
-        let xs = s.intersect(&r);
+        s.set_transform(Transform::translation(5.0, 0.0, 0.0));
+        let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 0);
     }
