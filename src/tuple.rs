@@ -47,7 +47,7 @@ impl Tuple {
         (self.x.powf(two) + self.y.powf(two) + self.z.powf(two) + self.w.powf(two)).sqrt()
     }
 
-    pub fn normalized(&self) -> Self {
+    pub fn normalize(&self) -> Self {
         let magnitude = self.magnitude();
         Self {
             x: self.x / magnitude,
@@ -320,7 +320,7 @@ mod tests {
         let v = Tuple::vector(4.0, 0.0, 0.0);
 
         assert!(v
-            .normalized()
+            .normalize()
             .approx_eq(&Tuple::vector(1.0, 0.0, 0.0), F64Margin::default()));
     }
 
@@ -328,7 +328,7 @@ mod tests {
     fn normalizing_vector_1_2_3() {
         let v = Tuple::vector(1.0, 2.0, 3.0);
 
-        assert!(v.normalized().approx_eq(
+        assert!(v.normalize().approx_eq(
             &Tuple::vector(1.0 / 14f64.sqrt(), 2.0 / 14f64.sqrt(), 3.0 / 14f64.sqrt()),
             F64Margin::default()
         ));
@@ -338,7 +338,7 @@ mod tests {
     fn magnitude_of_normalized_vector() {
         let v = Tuple::vector(1.0, 2.0, 3.0);
 
-        let norm = v.normalized();
+        let norm = v.normalize();
 
         assert!(norm.magnitude().approx_eq(1.0, F64Margin::default()));
     }

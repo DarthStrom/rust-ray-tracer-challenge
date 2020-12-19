@@ -122,6 +122,12 @@ impl Transform {
     pub fn is_invertible(&self) -> bool {
         self.data.is_invertible()
     }
+
+    pub fn transpose(&self) -> Self {
+        Self {
+            data: self.data.transpose(),
+        }
+    }
 }
 
 impl Mul for Transform {

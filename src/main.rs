@@ -37,7 +37,7 @@ fn main() {
             let world_x = -half + pixel_size * x as f64;
 
             let position = Tuple::point(world_x, world_y, wall_z);
-            let r = Ray::new(ray_origin, (position - ray_origin).normalized());
+            let r = Ray::new(ray_origin, (position - ray_origin).normalize());
             let xs = shape.intersect(&r);
             if xs.hit().is_some() {
                 c.write_pixel(x, y, color);

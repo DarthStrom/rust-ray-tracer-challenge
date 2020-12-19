@@ -88,7 +88,7 @@ impl Matrix {
         }
     }
 
-    pub fn transposed(&self) -> Self {
+    pub fn transpose(&self) -> Self {
         let mut result = vec![];
         for _ in 0..self[0].len() {
             result.push(vec![]);
@@ -308,7 +308,7 @@ mod tests {
         ]);
 
         assert_eq!(
-            a.transposed(),
+            a.transpose(),
             Matrix::new(vec![
                 vec![0.0, 9.0, 1.0, 0.0],
                 vec![9.0, 8.0, 8.0, 0.0],
@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     fn transposing_the_identity_matrix() {
-        let a = Matrix::identity().transposed();
+        let a = Matrix::identity().transpose();
 
         assert_eq!(a, Matrix::identity());
     }
