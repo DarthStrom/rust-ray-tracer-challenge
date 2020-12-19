@@ -57,6 +57,10 @@ impl Tuple {
         }
     }
 
+    pub fn reflect(&self, normal: &Tuple) -> Self {
+        *self - *normal * 2.0 * dot(self, normal)
+    }
+
     pub fn new(x: f64, y: f64, z: f64, w: f64) -> Self {
         Self { x, y, z, w }
     }
@@ -137,6 +141,8 @@ impl<'a> ApproxEq for &'a Tuple {
 #[cfg(test)]
 mod tests {
     use float_cmp::F64Margin;
+
+    use crate::MARGIN;
 
     use super::*;
 
@@ -358,5 +364,26 @@ mod tests {
 
         assert!(cross(&a, &b).approx_eq(&Tuple::vector(-1.0, 2.0, -1.0), F64Margin::default()));
         assert!(cross(&b, &a).approx_eq(&Tuple::vector(1.0, -2.0, 1.0), F64Margin::default()));
+    }
+
+    #[test]
+    fn reflecting_a_vector_approacing_at_45_deg() {
+        let v = Tuple::vector(1.0, -1.0, 0.0);
+        let n = Tuple::vector(0.0, 1.0, 0.0);
+
+        let r = v.reflect(&n);
+
+        assert_eq!(r, Tuple::vector(1.0, 1.0, 0.0));
+    }
+
+    #[test]
+    fn reflecting_a_vector_off_a_slanted_surface() {
+        let v = Tuple::vector(0.0, -1.0, 0.0);
+        let sqrt_2_over_2 = 2f64.sqrt() / 2.0;
+        let n = Tuple::vector(sqrt_2_over_2, sqrt_2_over_2, 0.0);
+
+        let r = v.reflect(&n);
+
+        assert!(r.approx_eq(&Tuple::vector(1.0, 0.0, 0.0), MARGIN));
     }
 }
