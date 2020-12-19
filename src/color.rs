@@ -2,7 +2,7 @@ use crate::tuple::Tuple;
 use float_cmp::{ApproxEq, F64Margin};
 use std::ops::{Add, Mul, Sub};
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Color {
     tuple: Tuple,
 }

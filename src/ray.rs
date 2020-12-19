@@ -3,7 +3,7 @@ use std::ops::Index;
 use crate::tuple::Tuple;
 use crate::{matrix::transform::Transform, sphere::Sphere};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Ray {
     pub origin: Tuple,
     pub direction: Tuple,

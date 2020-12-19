@@ -9,10 +9,15 @@ use tuple::Tuple;
 
 mod canvas;
 mod color;
+mod light;
+mod material;
 mod matrix;
 mod ray;
 mod sphere;
 mod tuple;
+
+#[cfg(test)]
+mod test;
 
 pub const MARGIN: F64Margin = F64Margin {
     ulps: 2,

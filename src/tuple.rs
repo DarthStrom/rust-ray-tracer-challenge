@@ -142,7 +142,7 @@ impl<'a> ApproxEq for &'a Tuple {
 mod tests {
     use float_cmp::F64Margin;
 
-    use crate::MARGIN;
+    use crate::{test::sqrt_n_over_n, MARGIN};
 
     use super::*;
 
@@ -379,8 +379,7 @@ mod tests {
     #[test]
     fn reflecting_a_vector_off_a_slanted_surface() {
         let v = Tuple::vector(0.0, -1.0, 0.0);
-        let sqrt_2_over_2 = 2f64.sqrt() / 2.0;
-        let n = Tuple::vector(sqrt_2_over_2, sqrt_2_over_2, 0.0);
+        let n = Tuple::vector(sqrt_n_over_n(2), sqrt_n_over_n(2), 0.0);
 
         let r = v.reflect(&n);
 

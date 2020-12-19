@@ -1,14 +1,16 @@
 use crate::{
+    material::Material,
     matrix::transform::Transform,
     ray::{Intersection, Intersections, Ray},
     tuple::{dot, Tuple},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sphere {
     center: Tuple,
     radius: f64,
     transform: Transform,
+    material: Material,
 }
 
 impl Sphere {
@@ -59,18 +61,38 @@ impl Default for Sphere {
             center: Tuple::point(0.0, 0.0, 0.0),
             radius: 1.0,
             transform: Transform::identity(),
+            material: Material::default(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::MARGIN;
-
     use super::*;
+
+    use crate::test;
+    use crate::{material::Material, MARGIN};
 
     use float_cmp::ApproxEq;
     use std::f64::consts::PI;
+    use test::sqrt_n_over_n;
+
+    #[test]
+    fn default_material() {
+        let s = Sphere::default();
+
+        assert_eq!(s.material, Material::default());
+    }
+
+    #[test]
+    fn changing_material() {
+        let mut s = Sphere::default();
+        let mut m = Material::default();
+        m.ambient = 1.0;
+
+        s.material = m;
+        assert_eq!(s.material, m);
+    }
 
     #[test]
     fn default_transformation() {
@@ -119,25 +141,31 @@ mod tests {
     #[test]
     fn normal_at_a_nonaxial_point() {
         let s = Sphere::default();
-        let sqrt_3_over_3: f64 = 3f64.sqrt() / 3.0;
 
         let n = s
-            .normal_at(Tuple::point(sqrt_3_over_3, sqrt_3_over_3, sqrt_3_over_3))
+            .normal_at(Tuple::point(
+                sqrt_n_over_n(3),
+                sqrt_n_over_n(3),
+                sqrt_n_over_n(3),
+            ))
             .unwrap();
 
         assert_eq!(
             n,
-            Tuple::vector(sqrt_3_over_3, sqrt_3_over_3, sqrt_3_over_3)
+            Tuple::vector(sqrt_n_over_n(3), sqrt_n_over_n(3), sqrt_n_over_n(3))
         );
     }
 
     #[test]
     fn normal_is_normalized() {
         let s = Sphere::default();
-        let sqrt_3_over_3: f64 = 3f64.sqrt() / 3.0;
 
         let n = s
-            .normal_at(Tuple::point(sqrt_3_over_3, sqrt_3_over_3, sqrt_3_over_3))
+            .normal_at(Tuple::point(
+                sqrt_n_over_n(3),
+                sqrt_n_over_n(3),
+                sqrt_n_over_n(3),
+            ))
             .unwrap();
 
         assert_eq!(n, n.normalize());
@@ -158,10 +186,9 @@ mod tests {
         let mut s = Sphere::default();
         let m = Transform::scaling(1.0, 0.5, 1.0) * Transform::rotation_z(PI / 5.0);
         s.set_transform(&m);
-        let sqrt_2_over_2: f64 = 2f64.sqrt() / 2.0;
 
         let n = s
-            .normal_at(Tuple::point(0.0, sqrt_2_over_2, -sqrt_2_over_2))
+            .normal_at(Tuple::point(0.0, sqrt_n_over_n(2), -sqrt_n_over_n(2)))
             .unwrap();
 
         assert!(n.approx_eq(&Tuple::vector(0.0, 0.97014, -0.24254), MARGIN));
