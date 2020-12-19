@@ -28,8 +28,8 @@ impl Ray {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Intersection<'a> {
-    t: f64,
-    object: &'a Sphere,
+    pub t: f64,
+    pub object: &'a Sphere,
 }
 
 impl<'a> Intersection<'a> {
