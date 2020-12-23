@@ -2,12 +2,12 @@ use crate::tuple::Tuple;
 use float_cmp::{ApproxEq, F64Margin};
 use std::ops::{Add, Mul, Sub};
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Color {
     tuple: Tuple,
 }
 
-fn hadamard_product(c1: &Color, c2: &Color) -> Color {
+fn hadamard_product(c1: Color, c2: Color) -> Color {
     Color::new(
         c1.red() * c2.red(),
         c1.green() * c2.green(),
@@ -78,7 +78,7 @@ impl Mul for Color {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        hadamard_product(&self, &rhs)
+        hadamard_product(self, rhs)
     }
 }
 

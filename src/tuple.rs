@@ -9,7 +9,7 @@ pub struct Tuple {
     pub w: f64,
 }
 
-pub fn cross(a: &Tuple, b: &Tuple) -> Tuple {
+pub fn cross(a: Tuple, b: Tuple) -> Tuple {
     if !a.is_vector() || !b.is_vector() {
         panic!("cross product on non-vector")
     }
@@ -21,7 +21,7 @@ pub fn cross(a: &Tuple, b: &Tuple) -> Tuple {
     )
 }
 
-pub fn dot(a: &Tuple, b: &Tuple) -> f64 {
+pub fn dot(a: Tuple, b: Tuple) -> f64 {
     a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
 }
 
@@ -55,6 +55,10 @@ impl Tuple {
             z: self.z / magnitude,
             w: self.w / magnitude,
         }
+    }
+
+    pub fn reflect(&self, normal: Tuple) -> Self {
+        *self - normal * 2.0 * dot(*self, normal)
     }
 
     pub fn new(x: f64, y: f64, z: f64, w: f64) -> Self {
@@ -137,6 +141,8 @@ impl<'a> ApproxEq for &'a Tuple {
 #[cfg(test)]
 mod tests {
     use float_cmp::F64Margin;
+
+    use crate::{test::sqrt_n_over_n, MARGIN};
 
     use super::*;
 
@@ -348,7 +354,7 @@ mod tests {
         let a = Tuple::vector(1.0, 2.0, 3.0);
         let b = Tuple::vector(2.0, 3.0, 4.0);
 
-        assert!(dot(&a, &b).approx_eq(20.0, F64Margin::default()));
+        assert!(dot(a, b).approx_eq(20.0, F64Margin::default()));
     }
 
     #[test]
@@ -356,7 +362,27 @@ mod tests {
         let a = Tuple::vector(1.0, 2.0, 3.0);
         let b = Tuple::vector(2.0, 3.0, 4.0);
 
-        assert!(cross(&a, &b).approx_eq(&Tuple::vector(-1.0, 2.0, -1.0), F64Margin::default()));
-        assert!(cross(&b, &a).approx_eq(&Tuple::vector(1.0, -2.0, 1.0), F64Margin::default()));
+        assert!(cross(a, b).approx_eq(&Tuple::vector(-1.0, 2.0, -1.0), F64Margin::default()));
+        assert!(cross(b, a).approx_eq(&Tuple::vector(1.0, -2.0, 1.0), F64Margin::default()));
+    }
+
+    #[test]
+    fn reflecting_a_vector_approacing_at_45_deg() {
+        let v = Tuple::vector(1.0, -1.0, 0.0);
+        let n = Tuple::vector(0.0, 1.0, 0.0);
+
+        let r = v.reflect(n);
+
+        assert_eq!(r, Tuple::vector(1.0, 1.0, 0.0));
+    }
+
+    #[test]
+    fn reflecting_a_vector_off_a_slanted_surface() {
+        let v = Tuple::vector(0.0, -1.0, 0.0);
+        let n = Tuple::vector(sqrt_n_over_n(2), sqrt_n_over_n(2), 0.0);
+
+        let r = v.reflect(n);
+
+        assert!(r.approx_eq(&Tuple::vector(1.0, 0.0, 0.0), MARGIN));
     }
 }

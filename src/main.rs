@@ -3,6 +3,8 @@ use std::fs;
 use canvas::Canvas;
 use color::Color;
 use float_cmp::F64Margin;
+use light::PointLight;
+use material::Material;
 use ray::Ray;
 use sphere::Sphere;
 use tuple::Tuple;
@@ -21,10 +23,15 @@ macro_rules! f_assert_eq {
 
 mod canvas;
 mod color;
+mod light;
+mod material;
 mod matrix;
 mod ray;
 mod sphere;
 mod tuple;
+
+#[cfg(test)]
+mod test;
 
 fn main() {
     let ray_origin = Tuple::point(0.0, 0.0, -5.0);
@@ -35,8 +42,10 @@ fn main() {
     let half = wall_size / 2.0;
 
     let mut c = Canvas::new(canvas_pixels, canvas_pixels);
-    let color = Color::new(1.0, 0.0, 0.0);
-    let shape = Sphere::default();
+    let mut shape = Sphere::default();
+    shape.material = Material::default();
+
+    let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
     for y in 0..canvas_pixels - 1 {
         let world_y = half - pixel_size * y as f64;
@@ -44,10 +53,15 @@ fn main() {
             let world_x = -half + pixel_size * x as f64;
 
             let position = Tuple::point(world_x, world_y, wall_z);
-            let r = Ray::new(ray_origin, (position - ray_origin).normalize());
-            let xs = shape.intersect(&r);
-            if xs.hit().is_some() {
-                c.write_pixel(x, y, color);
+            let ray = Ray::new(ray_origin, (position - ray_origin).normalize());
+            let xs = shape.intersect(ray);
+            if let Some(hit) = xs.hit() {
+                let point = ray.position(hit.t);
+                if let Ok(normal) = hit.object.normal_at(point) {
+                    let eye = -ray.direction;
+                    let color = hit.object.material.lighting(light, point, eye, normal);
+                    c.write_pixel(x, y, color);
+                }
             }
         }
     }
