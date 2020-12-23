@@ -48,7 +48,7 @@ impl Matrix {
 
     pub fn inverse(&self) -> Result<Self, String> {
         if !self.is_invertible() {
-            return Err(format!("not invertible"));
+            return Err("not invertible".to_string());
         }
 
         let mut new_matrix = vec![];
@@ -179,23 +179,23 @@ mod tests {
             vec![13.5, 14.5, 15.5, 16.5],
         ]);
 
-        assert_eq!(m[0][0], 1.0);
-        assert_eq!(m[0][3], 4.0);
-        assert_eq!(m[1][0], 5.5);
-        assert_eq!(m[1][2], 7.5);
-        assert_eq!(m[2][2], 11.0);
-        assert_eq!(m[3][0], 13.5);
-        assert_eq!(m[3][2], 15.5);
+        assert!(m[0][0].approx_eq(1.0, MARGIN));
+        assert!(m[0][3].approx_eq(4.0, MARGIN));
+        assert!(m[1][0].approx_eq(5.5, MARGIN));
+        assert!(m[1][2].approx_eq(7.5, MARGIN));
+        assert!(m[2][2].approx_eq(11.0, MARGIN));
+        assert!(m[3][0].approx_eq(13.5, MARGIN));
+        assert!(m[3][2].approx_eq(15.5, MARGIN));
     }
 
     #[test]
     fn a_2x2_matrix() {
         let m = Matrix::new(vec![vec![-3.0, 5.0], vec![1.0, -2.0]]);
 
-        assert_eq!(m[0][0], -3.0);
-        assert_eq!(m[0][1], 5.0);
-        assert_eq!(m[1][0], 1.0);
-        assert_eq!(m[1][1], -2.0);
+        assert!(m[0][0].approx_eq(-3.0, MARGIN));
+        assert!(m[0][1].approx_eq(5.0, MARGIN));
+        assert!(m[1][0].approx_eq(1.0, MARGIN));
+        assert!(m[1][1].approx_eq(-2.0, MARGIN));
     }
 
     #[test]
@@ -206,9 +206,9 @@ mod tests {
             vec![0.0, 1.0, 1.0],
         ]);
 
-        assert_eq!(m[0][0], -3.0);
-        assert_eq!(m[0][1], 5.0);
-        assert_eq!(m[2][2], 1.0);
+        assert!(m[0][0].approx_eq(-3.0, MARGIN));
+        assert!(m[0][1].approx_eq(5.0, MARGIN));
+        assert!(m[2][2].approx_eq(1.0, MARGIN));
     }
 
     #[test]
@@ -329,7 +329,7 @@ mod tests {
     fn calculating_the_determinant_of_a_2x2_matrix() {
         let a = Matrix::new(vec![vec![1.0, 5.0], vec![-3.0, 2.0]]);
 
-        assert_eq!(a.determinant(), 17.0);
+        assert!(a.determinant().approx_eq(17.0, MARGIN));
     }
 
     #[test]
@@ -374,8 +374,8 @@ mod tests {
         ]);
         let b = a.submatrix(1, 0);
 
-        assert_eq!(b.determinant(), 25.0);
-        assert_eq!(a.minor(1, 0), 25.0);
+        assert!(b.determinant().approx_eq(25.0, MARGIN));
+        assert!(a.minor(1, 0).approx_eq(25.0, MARGIN));
     }
 
     #[test]
@@ -386,10 +386,10 @@ mod tests {
             vec![6.0, -1.0, 5.0],
         ]);
 
-        assert_eq!(a.minor(0, 0), -12.0);
-        assert_eq!(a.cofactor(0, 0), -12.0);
-        assert_eq!(a.minor(1, 0), 25.0);
-        assert_eq!(a.cofactor(1, 0), -25.0);
+        assert!(a.minor(0, 0).approx_eq(-12.0, MARGIN));
+        assert!(a.cofactor(0, 0).approx_eq(-12.0, MARGIN));
+        assert!(a.minor(1, 0).approx_eq(25.0, MARGIN));
+        assert!(a.cofactor(1, 0).approx_eq(-25.0, MARGIN));
     }
 
     #[test]
@@ -400,10 +400,10 @@ mod tests {
             vec![2.0, 6.0, 4.0],
         ]);
 
-        assert_eq!(a.cofactor(0, 0), 56.0);
-        assert_eq!(a.cofactor(0, 1), 12.0);
-        assert_eq!(a.cofactor(0, 2), -46.0);
-        assert_eq!(a.determinant(), -196.0);
+        assert!(a.cofactor(0, 0).approx_eq(56.0, MARGIN));
+        assert!(a.cofactor(0, 1).approx_eq(12.0, MARGIN));
+        assert!(a.cofactor(0, 2).approx_eq(-46.0, MARGIN));
+        assert!(a.determinant().approx_eq(-196.0, MARGIN));
     }
 
     #[test]
@@ -415,11 +415,11 @@ mod tests {
             vec![-6.0, 7.0, 7.0, -9.0],
         ]);
 
-        assert_eq!(a.cofactor(0, 0), 690.0);
-        assert_eq!(a.cofactor(0, 1), 447.0);
-        assert_eq!(a.cofactor(0, 2), 210.0);
-        assert_eq!(a.cofactor(0, 3), 51.0);
-        assert_eq!(a.determinant(), -4071.0);
+        f_assert_eq!(a.cofactor(0, 0), 690.0);
+        f_assert_eq!(a.cofactor(0, 1), 447.0);
+        f_assert_eq!(a.cofactor(0, 2), 210.0);
+        f_assert_eq!(a.cofactor(0, 3), 51.0);
+        f_assert_eq!(a.determinant(), -4071.0);
     }
 
     #[test]
@@ -431,7 +431,7 @@ mod tests {
             vec![9.0, 1.0, 7.0, -6.0],
         ]);
 
-        assert_eq!(a.determinant(), -2120.0);
+        f_assert_eq!(a.determinant(), -2120.0);
         assert!(a.is_invertible());
     }
 
@@ -444,7 +444,7 @@ mod tests {
             vec![0.0, 0.0, 0.0, 0.0],
         ]);
 
-        assert_eq!(a.determinant(), 0.0);
+        f_assert_eq!(a.determinant(), 0.0);
         assert!(!a.is_invertible());
     }
 
@@ -458,11 +458,11 @@ mod tests {
         ]);
         let b = a.inverse().unwrap();
 
-        assert_eq!(a.determinant(), 532.0);
-        assert_eq!(a.cofactor(2, 3), -160.0);
-        assert_eq!(b[3][2], -160.0 / 532.0);
-        assert_eq!(a.cofactor(3, 2), 105.0);
-        assert_eq!(b[2][3], 105.0 / 532.0);
+        f_assert_eq!(a.determinant(), 532.0);
+        f_assert_eq!(a.cofactor(2, 3), -160.0);
+        f_assert_eq!(b[3][2], -160.0 / 532.0);
+        f_assert_eq!(a.cofactor(3, 2), 105.0);
+        f_assert_eq!(b[2][3], 105.0 / 532.0);
         assert!(b.approx_eq(
             &Matrix::new(vec![
                 vec![0.21805, 0.45113, 0.24060, -0.04511],

@@ -47,8 +47,8 @@ impl Sphere {
     pub fn normal_at(&self, world_point: Tuple) -> Result<Tuple, String> {
         let object_point = self.transform.inverse()? * world_point;
         let object_normal = object_point - Tuple::point(0.0, 0.0, 0.0);
-        let world_normal = self.transform.inverse()?.transpose() * object_normal;
-
+        let mut world_normal = self.transform.inverse()?.transpose() * object_normal;
+        world_normal.w = 0.0;
         Ok(world_normal.normalize())
     }
 }
@@ -70,7 +70,7 @@ mod tests {
     use super::*;
 
     use float_cmp::ApproxEq;
-    use std::f64::consts::PI;
+    use std::f64::consts::{FRAC_1_SQRT_2, PI};
 
     #[test]
     fn default_transformation() {
@@ -148,9 +148,13 @@ mod tests {
         let mut s = Sphere::default();
         s.set_transform(&Transform::translation(0.0, 1.0, 0.0));
 
-        let n = s.normal_at(Tuple::point(0.0, 1.70711, -0.70711)).unwrap();
+        let n = s
+            .normal_at(Tuple::point(0.0, 1.0 + FRAC_1_SQRT_2, -FRAC_1_SQRT_2))
+            .unwrap();
 
-        assert!(n.approx_eq(&Tuple::vector(0.0, 0.70711, -0.70711), MARGIN));
+        println!("n: {:?}", n);
+        println!("v: {:?}", Tuple::vector(0.0, FRAC_1_SQRT_2, -FRAC_1_SQRT_2));
+        f_assert_eq!(n, &Tuple::vector(0.0, FRAC_1_SQRT_2, -FRAC_1_SQRT_2));
     }
 
     #[test]

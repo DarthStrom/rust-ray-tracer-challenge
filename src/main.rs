@@ -7,17 +7,24 @@ use ray::Ray;
 use sphere::Sphere;
 use tuple::Tuple;
 
+pub const MARGIN: F64Margin = F64Margin {
+    ulps: 2,
+    epsilon: 0.00001,
+};
+
+#[cfg(test)]
+macro_rules! f_assert_eq {
+    ($a:expr, $b:expr) => {
+        assert!($a.approx_eq($b, $crate::MARGIN));
+    };
+}
+
 mod canvas;
 mod color;
 mod matrix;
 mod ray;
 mod sphere;
 mod tuple;
-
-pub const MARGIN: F64Margin = F64Margin {
-    ulps: 2,
-    epsilon: 0.00001,
-};
 
 fn main() {
     let ray_origin = Tuple::point(0.0, 0.0, -5.0);
