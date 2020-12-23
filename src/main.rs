@@ -17,6 +17,7 @@ mod matrix;
 mod ray;
 mod sphere;
 mod tuple;
+mod world;
 
 #[cfg(test)]
 mod test;

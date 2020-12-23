@@ -14,6 +14,26 @@ pub struct Material {
 }
 
 impl Material {
+    pub fn color(self, color: Color) -> Self {
+        Self { color, ..self }
+    }
+
+    pub fn ambient(self, ambient: f64) -> Self {
+        Self { ambient, ..self }
+    }
+
+    pub fn diffuse(self, diffuse: f64) -> Self {
+        Self { diffuse, ..self }
+    }
+
+    pub fn specular(self, specular: f64) -> Self {
+        Self { specular, ..self }
+    }
+
+    pub fn shininess(self, shininess: f64) -> Self {
+        Self { shininess, ..self }
+    }
+
     pub fn lighting(&self, light: PointLight, point: Tuple, eyev: Tuple, normalv: Tuple) -> Color {
         let effective_color = self.color * light.intensity;
         let lightv = (light.position - point).normalize();
