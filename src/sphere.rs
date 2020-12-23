@@ -18,7 +18,7 @@ impl Sphere {
         let ray = if self.transform.is_invertible() {
             ray.transform(self.transform.inverse().unwrap())
         } else {
-            ray.clone()
+            ray
         };
 
         let sphere_to_ray = ray.origin - self.center;
@@ -74,7 +74,7 @@ mod tests {
     use crate::{material::Material, MARGIN};
 
     use float_cmp::ApproxEq;
-    use std::f64::consts::PI;
+    use std::f64::consts::{FRAC_1_SQRT_2, PI};
     use test::sqrt_n_over_n;
 
     #[test]
@@ -176,9 +176,13 @@ mod tests {
         let mut s = Sphere::default();
         s.set_transform(Transform::translation(0.0, 1.0, 0.0));
 
-        let n = s.normal_at(Tuple::point(0.0, 1.70711, -0.70711)).unwrap();
+        let n = s
+            .normal_at(Tuple::point(0.0, 1.0 + FRAC_1_SQRT_2, -FRAC_1_SQRT_2))
+            .unwrap();
 
-        assert!(n.approx_eq(&Tuple::vector(0.0, 0.70711, -0.70711), MARGIN));
+        println!("n: {:?}", n);
+        println!("v: {:?}", Tuple::vector(0.0, FRAC_1_SQRT_2, -FRAC_1_SQRT_2));
+        f_assert_eq!(n, &Tuple::vector(0.0, FRAC_1_SQRT_2, -FRAC_1_SQRT_2));
     }
 
     #[test]

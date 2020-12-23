@@ -333,14 +333,14 @@ mod tests {
 
     #[test]
     fn chained_transformations_must_be_applied_in_reverse_order() {
-        let p = Tuple::point(1.0, 0.0, 1.0);
+        let point = Tuple::point(1.0, 0.0, 1.0);
         let a = Transform::rotation_x(PI / 2.0);
         let b = Transform::scaling(5.0, 5.0, 5.0);
         let c = Transform::translation(10.0, 5.0, 7.0);
 
-        let t = c * b * a;
+        let transform = c * b * a;
 
-        assert!((t * p).approx_eq(&Tuple::point(15.0, 0.0, 7.0), MARGIN));
+        assert!((transform * point).approx_eq(&Tuple::point(15.0, 0.0, 7.0), MARGIN));
     }
 
     #[test]

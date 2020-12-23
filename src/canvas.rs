@@ -59,7 +59,7 @@ impl Canvas {
 fn split_long_ppm_line(line: &str) -> String {
     if line.len() > 70 {
         let i = line
-            .match_indices(" ")
+            .match_indices(' ')
             .filter(|(i, _)| i < &70)
             .max()
             .unwrap()
@@ -171,6 +171,6 @@ mod tests {
 
         let ppm = c.to_ppm();
 
-        assert!(ppm.ends_with("\n"));
+        assert!(ppm.ends_with('\n'));
     }
 }

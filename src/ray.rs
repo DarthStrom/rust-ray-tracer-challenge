@@ -73,6 +73,7 @@ impl<'a> Index<usize> for Intersections<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{sphere::Sphere, tuple::Tuple};
+    use float_cmp::ApproxEq;
 
     use super::*;
 
@@ -105,8 +106,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0].t, 4.0);
-        assert_eq!(xs[1].t, 6.0);
+        f_assert_eq!(xs[0].t, 4.0);
+        f_assert_eq!(xs[1].t, 6.0);
     }
 
     #[test]
@@ -117,8 +118,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0].t, 5.0);
-        assert_eq!(xs[1].t, 5.0);
+        f_assert_eq!(xs[0].t, 5.0);
+        f_assert_eq!(xs[1].t, 5.0);
     }
 
     #[test]
@@ -138,8 +139,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0].t, -1.0);
-        assert_eq!(xs[1].t, 1.0);
+        f_assert_eq!(xs[0].t, -1.0);
+        f_assert_eq!(xs[1].t, 1.0);
     }
 
     #[test]
@@ -150,8 +151,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0].t, -6.0);
-        assert_eq!(xs[1].t, -4.0);
+        f_assert_eq!(xs[0].t, -6.0);
+        f_assert_eq!(xs[1].t, -4.0);
     }
 
     #[test]
@@ -160,7 +161,7 @@ mod tests {
 
         let i = Intersection::new(3.5, &s);
 
-        assert_eq!(i.t, 3.5);
+        f_assert_eq!(i.t, 3.5);
         assert_eq!(i.object, &s);
     }
 
@@ -173,8 +174,8 @@ mod tests {
         let xs = Intersections::new(vec![i1, i2]);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0].t, 1.0);
-        assert_eq!(xs[1].t, 2.0);
+        f_assert_eq!(xs[0].t, 1.0);
+        f_assert_eq!(xs[1].t, 2.0);
     }
 
     #[test]
@@ -258,8 +259,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert_eq!(xs[0].t, 3.0);
-        assert_eq!(xs[1].t, 7.0)
+        f_assert_eq!(xs[0].t, 3.0);
+        f_assert_eq!(xs[1].t, 7.0)
     }
 
     #[test]

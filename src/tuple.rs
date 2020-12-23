@@ -35,7 +35,7 @@ impl Tuple {
     }
 
     pub fn is_point(&self) -> bool {
-        self.w == 1.0
+        self.w.approx_eq(1.0, F64Margin::default())
     }
 
     pub fn is_vector(&self) -> bool {

@@ -86,10 +86,10 @@ mod tests {
         let m = Material::default();
 
         assert_eq!(m.color, Color::new(1.0, 1.0, 1.0));
-        assert_eq!(m.ambient, 0.1);
-        assert_eq!(m.diffuse, 0.9);
-        assert_eq!(m.specular, 0.9);
-        assert_eq!(m.shininess, 200.0);
+        f_assert_eq!(m.ambient, 0.1);
+        f_assert_eq!(m.diffuse, 0.9);
+        f_assert_eq!(m.specular, 0.9);
+        f_assert_eq!(m.shininess, 200.0);
     }
 
     #[test]
