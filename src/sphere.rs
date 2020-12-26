@@ -1,7 +1,10 @@
 use crate::{
     material::Material,
     matrix::transform::Transform,
-    ray::{Intersection, Intersections, Ray},
+    ray::{
+        intersections::{Intersection, Intersections},
+        Ray,
+    },
     tuple::{dot, Tuple},
 };
 

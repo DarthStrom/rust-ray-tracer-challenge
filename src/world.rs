@@ -6,7 +6,7 @@ use crate::{
     light::PointLight,
     material,
     matrix::transform::Transform,
-    ray::{Intersection, Intersections, Ray},
+    ray::{intersections::Intersections, Ray},
     sphere::Sphere,
     tuple::Tuple,
 };
