@@ -2,7 +2,13 @@ use color::Color;
 use material::Material;
 
 use crate::{
-    color, light::PointLight, material, matrix::transform::Transform, sphere::Sphere, tuple::Tuple,
+    color,
+    light::PointLight,
+    material,
+    matrix::transform::Transform,
+    ray::{Intersection, Intersections, Ray},
+    sphere::Sphere,
+    tuple::Tuple,
 };
 
 pub struct World {
@@ -16,6 +22,17 @@ impl World {
             objects: vec![],
             light_sources: vec![],
         }
+    }
+
+    pub fn intersect(&self, ray: Ray) -> Intersections {
+        let mut vec = self
+            .objects
+            .iter()
+            .flat_map(|o| o.intersect(ray).data)
+            .collect::<Vec<_>>();
+
+        vec.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
+        Intersections::new(vec)
     }
 }
 
@@ -44,7 +61,10 @@ impl Default for World {
 
 #[cfg(test)]
 mod tests {
-    use crate::{color::Color, material::Material, matrix::transform::Transform, tuple::Tuple};
+    use crate::{
+        color::Color, material::Material, matrix::transform::Transform, ray::Ray, tuple::Tuple,
+    };
+    use float_cmp::ApproxEq;
 
     use super::*;
 
@@ -75,6 +95,15 @@ mod tests {
 
     #[test]
     fn intersect_a_world_with_a_ray() {
-        // coming soon...
+        let w = World::default();
+        let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
+
+        let xs = w.intersect(r);
+
+        assert_eq!(xs.len(), 4);
+        f_assert_eq!(xs[0].t, 4.0);
+        f_assert_eq!(xs[1].t, 4.5);
+        f_assert_eq!(xs[2].t, 5.5);
+        f_assert_eq!(xs[3].t, 6.0);
     }
 }

@@ -1,4 +1,4 @@
-use std::ops::Index;
+use std::{iter::FromIterator, ops::Index};
 
 use crate::tuple::Tuple;
 use crate::{matrix::transform::Transform, sphere::Sphere};
@@ -40,7 +40,7 @@ impl<'a> Intersection<'a> {
 
 #[derive(Debug, Default)]
 pub struct Intersections<'a> {
-    data: Vec<Intersection<'a>>,
+    pub data: Vec<Intersection<'a>>,
 }
 
 impl<'a> Intersections<'a> {
@@ -60,6 +60,10 @@ impl<'a> Intersections<'a> {
     pub fn len(&self) -> usize {
         self.data.len()
     }
+
+    pub fn append(&mut self, other: &mut Intersections<'a>) {
+        self.data.append(&mut other.data);
+    }
 }
 
 impl<'a> Index<usize> for Intersections<'a> {
@@ -67,6 +71,16 @@ impl<'a> Index<usize> for Intersections<'a> {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index]
+    }
+}
+
+impl<'a> FromIterator<Intersection<'a>> for Intersections<'a> {
+    fn from_iter<T: IntoIterator<Item = Intersection<'a>>>(iter: T) -> Self {
+        let mut result = Self { data: vec![] };
+        for i in iter {
+            result.data.push(i);
+        }
+        result
     }
 }
 
