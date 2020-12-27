@@ -1,7 +1,7 @@
 use float_cmp::{ApproxEq, F64Margin};
 use std::ops::Mul;
 
-use crate::tuple::Tuple;
+use crate::tuple::{cross, Tuple};
 
 use super::Matrix;
 
@@ -15,6 +15,10 @@ impl Transform {
         Self {
             data: Matrix::identity(),
         }
+    }
+
+    pub fn new(matrix: Matrix) -> Self {
+        Self { data: matrix }
     }
 
     pub fn rotation_x(radians: f64) -> Self {
@@ -39,6 +43,19 @@ impl Transform {
 
     pub fn translation(x: f64, y: f64, z: f64) -> Self {
         Transform::identity().translate(x, y, z)
+    }
+
+    pub fn view_transform(from: Tuple, to: Tuple, up: Tuple) -> Self {
+        let forward = (to - from).normalize();
+        let left = cross(forward, up.normalize());
+        let true_up = cross(left, forward);
+        let orientation = Matrix::new(vec![
+            vec![left.x, left.y, left.z, 0.0],
+            vec![true_up.x, true_up.y, true_up.z, 0.0],
+            vec![-forward.x, -forward.y, -forward.z, 0.0],
+            vec![0.0, 0.0, 0.0, 1.0],
+        ]);
+        Transform::new(orientation) * Transform::translation(-from.x, -from.y, -from.z)
     }
 
     pub fn rotate_x(&self, radians: f64) -> Self {
@@ -362,5 +379,58 @@ mod tests {
         let individual_things = t * sh * s * rz * ry * rx;
 
         assert!(fluent_things.approx_eq(&individual_things, MARGIN));
+    }
+
+    #[test]
+    fn transformation_matrix_for_the_default_orientation() {
+        let from = Tuple::point(0.0, 0.0, 0.0);
+        let to = Tuple::point(0.0, 0.0, -1.0);
+        let up = Tuple::vector(0.0, 1.0, 0.0);
+
+        let t = Transform::view_transform(from, to, up);
+
+        f_assert_eq!(t, &Transform::identity());
+    }
+
+    #[test]
+    fn view_transformation_matrix_looking_in_positive_z_direction() {
+        let from = Tuple::point(0.0, 0.0, 0.0);
+        let to = Tuple::point(0.0, 0.0, 1.0);
+        let up = Tuple::vector(0.0, 1.0, 0.0);
+
+        let t = Transform::view_transform(from, to, up);
+
+        f_assert_eq!(t, &Transform::scaling(-1.0, 1.0, -1.0));
+    }
+
+    #[test]
+    fn view_transformation_moves_the_world() {
+        let from = Tuple::point(0.0, 0.0, 8.0);
+        let to = Tuple::point(0.0, 0.0, 0.0);
+        let up = Tuple::vector(0.0, 1.0, 0.0);
+
+        let t = Transform::view_transform(from, to, up);
+
+        f_assert_eq!(t, &Transform::translation(0.0, 0.0, -8.0));
+    }
+
+    #[test]
+    fn an_arbitrary_view_transformation() {
+        let from = Tuple::point(1.0, 3.0, 2.0);
+        let to = Tuple::point(4.0, -2.0, 8.0);
+        let up = Tuple::vector(1.0, 1.0, 0.0);
+
+        let t = Transform::view_transform(from, to, up);
+
+        println!("{:?}", t.data);
+        f_assert_eq!(
+            t.data,
+            &Matrix::new(vec![
+                vec![-0.50709, 0.50709, 0.67612, -2.36643],
+                vec![0.76772, 0.60609, 0.12122, -2.82843],
+                vec![-0.35857, 0.59761, -0.71714, 0.00000],
+                vec![0.00000, 0.00000, 0.00000, 1.00000],
+            ])
+        )
     }
 }
