@@ -27,6 +27,18 @@ impl World {
         }
     }
 
+    pub fn color_at(&self, ray: Ray) -> Color {
+        if let Some(hit) = self.intersect(ray).hit() {
+            if let Ok(comps) = hit.prepare_computations(ray) {
+                self.shade_hit(comps)
+            } else {
+                Color::default()
+            }
+        } else {
+            Color::default()
+        }
+    }
+
     pub fn intersect(&self, ray: Ray) -> Intersections {
         let mut vec = self
             .objects
@@ -130,5 +142,28 @@ mod tests {
         let c = w.color_at(r);
 
         f_assert_eq!(c, &Color::default());
+    }
+
+    #[test]
+    fn color_when_a_ray_hits() {
+        let w = World::default();
+        let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
+
+        let c = w.color_at(r);
+
+        f_assert_eq!(c, &Color::new(0.38066, 0.47583, 0.2855));
+    }
+
+    #[test]
+    fn color_whith_an_intersection_behind_ray() {
+        let mut w = World::default();
+        w.objects[0].material.ambient = 1.0;
+        w.objects[1].material.ambient = 1.0;
+        let inner = &w.objects[1];
+        let r = Ray::new(Tuple::point(0.0, 0.0, 0.75), Tuple::vector(0.0, 0.0, -1.0));
+
+        let c = w.color_at(r);
+
+        f_assert_eq!(c, &inner.material.color);
     }
 }
