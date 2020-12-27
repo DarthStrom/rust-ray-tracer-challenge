@@ -6,7 +6,10 @@ use crate::{
     light::PointLight,
     material,
     matrix::transform::Transform,
-    ray::{intersections::Intersections, Ray},
+    ray::{
+        intersections::{Computations, Intersections},
+        Ray,
+    },
     sphere::Sphere,
     tuple::Tuple,
 };
@@ -33,6 +36,18 @@ impl World {
 
         vec.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
         Intersections::new(vec)
+    }
+
+    pub fn shade_hit(&self, comps: Computations) -> Color {
+        self.light_sources
+            .iter()
+            .map(|&light| {
+                comps
+                    .object
+                    .material
+                    .lighting(light, comps.point, comps.eyev, comps.normalv)
+            })
+            .fold(Color::default(), |acc, c| acc + c)
     }
 }
 
@@ -105,5 +120,15 @@ mod tests {
         f_assert_eq!(xs[1].t, 4.5);
         f_assert_eq!(xs[2].t, 5.5);
         f_assert_eq!(xs[3].t, 6.0);
+    }
+
+    #[test]
+    fn color_when_ray_misses() {
+        let w = World::default();
+        let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 1.0, 0.0));
+
+        let c = w.color_at(r);
+
+        f_assert_eq!(c, &Color::default());
     }
 }
