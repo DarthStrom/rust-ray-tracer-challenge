@@ -21,6 +21,7 @@ macro_rules! f_assert_eq {
     };
 }
 
+mod camera;
 mod canvas;
 mod color;
 mod light;
