@@ -5,7 +5,7 @@ pub struct Camera {
     hsize: usize,
     vsize: usize,
     field_of_view: f64,
-    transform: Transform,
+    pub transform: Transform,
 }
 
 impl Camera {

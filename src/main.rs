@@ -1,13 +1,17 @@
 use std::fs;
 
+use camera::Camera;
 use canvas::Canvas;
 use color::Color;
 use float_cmp::F64Margin;
 use light::PointLight;
 use material::Material;
+use matrix::transform::Transform;
 use ray::Ray;
 use sphere::Sphere;
+use std::f64::consts::PI;
 use tuple::Tuple;
+use world::World;
 
 pub const MARGIN: F64Margin = F64Margin {
     ulps: 2,
@@ -36,37 +40,68 @@ mod world;
 mod test;
 
 fn main() {
-    let ray_origin = Tuple::point(0.0, 0.0, -5.0);
-    let wall_z = 10.0;
-    let wall_size = 7.0;
-    let canvas_pixels = 100;
-    let pixel_size = wall_size / canvas_pixels as f64;
-    let half = wall_size / 2.0;
+    let mut floor = Sphere::default();
+    floor.set_transform(Transform::scaling(10.0, 0.01, 10.0));
+    floor.material = Material::default()
+        .color(Color::new(1.0, 0.9, 0.9))
+        .specular(0.0);
 
-    let mut c = Canvas::new(canvas_pixels, canvas_pixels);
-    let mut shape = Sphere::default();
-    shape.material = Material::default();
+    let mut left_wall = Sphere::default();
+    left_wall.set_transform(
+        Transform::identity()
+            .scale(10.0, 0.01, 10.0)
+            .rotate_x(PI / 2.0)
+            .rotate_y(-PI / 4.0)
+            .translate(0.0, 0.0, 5.0),
+    );
+    left_wall.material = floor.material;
 
-    let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
+    let mut right_wall = Sphere::default();
+    right_wall.set_transform(
+        Transform::identity()
+            .scale(10.0, 0.01, 10.0)
+            .rotate_x(PI / 2.0)
+            .rotate_y(PI / 4.0)
+            .translate(0.0, 0.0, 5.0),
+    );
+    right_wall.material = floor.material;
 
-    for y in 0..canvas_pixels - 1 {
-        let world_y = half - pixel_size * y as f64;
-        for x in 0..canvas_pixels - 1 {
-            let world_x = -half + pixel_size * x as f64;
+    let mut middle = Sphere::default();
+    middle.set_transform(Transform::translation(-0.5, 1.0, 0.5));
+    middle.material = Material::default()
+        .color(Color::new(0.1, 1.0, 0.5))
+        .diffuse(0.7)
+        .specular(0.3);
 
-            let position = Tuple::point(world_x, world_y, wall_z);
-            let ray = Ray::new(ray_origin, (position - ray_origin).normalize());
-            let xs = shape.intersect(ray);
-            if let Some(hit) = xs.hit() {
-                let point = ray.position(hit.t);
-                if let Ok(normal) = hit.object.normal_at(point) {
-                    let eye = -ray.direction;
-                    let color = hit.object.material.lighting(light, point, eye, normal);
-                    c.write_pixel(x, y, color);
-                }
-            }
-        }
-    }
+    let mut right = Sphere::default();
+    right.set_transform(Transform::scaling(0.5, 0.5, 0.5).translate(1.5, 0.5, -0.5));
+    right.material = Material::default()
+        .color(Color::new(0.5, 1.0, 0.1))
+        .diffuse(0.7)
+        .specular(0.3);
+
+    let mut left = Sphere::default();
+    left.set_transform(Transform::scaling(0.33, 0.33, 0.33).translate(-1.5, 0.33, -0.75));
+    left.material = Material::default()
+        .color(Color::new(1.0, 0.8, 0.1))
+        .diffuse(0.7)
+        .specular(0.3);
+
+    let mut world = World::new();
+    world.objects = vec![floor, left_wall, right_wall, middle, right, left];
+    world.light_sources = vec![PointLight::new(
+        Tuple::point(-10.0, 10.0, -10.0),
+        Color::new(1.0, 1.0, 1.0),
+    )];
+
+    let mut camera = Camera::new(100, 50, PI / 3.0);
+    camera.transform = Transform::view_transform(
+        Tuple::point(0.0, 1.5, -5.0),
+        Tuple::point(0.0, 1.0, 0.0),
+        Tuple::vector(0.0, 1.0, 0.0),
+    );
+
+    let c = camera.render(&world);
 
     fs::write("canvas.ppm", c.to_ppm()).unwrap();
 }
