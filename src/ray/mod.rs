@@ -3,7 +3,7 @@ use crate::tuple::Tuple;
 
 pub mod intersections;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Ray {
     pub origin: Tuple,
     pub direction: Tuple,
@@ -12,6 +12,20 @@ pub struct Ray {
 impl Ray {
     pub fn new(origin: Tuple, direction: Tuple) -> Self {
         Self { origin, direction }
+    }
+
+    pub fn origin(self, x: f64, y: f64, z: f64) -> Self {
+        Self {
+            origin: Tuple::point(x, y, z),
+            ..self
+        }
+    }
+
+    pub fn direction(self, x: f64, y: f64, z: f64) -> Self {
+        Self {
+            direction: Tuple::vector(x, y, z),
+            ..self
+        }
     }
 
     pub fn position(&self, t: f64) -> Tuple {

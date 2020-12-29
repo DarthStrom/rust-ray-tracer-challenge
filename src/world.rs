@@ -27,9 +27,22 @@ impl World {
         }
     }
 
-    pub fn light_sources(self, light_sources: &[PointLight]) -> Self {
+    pub fn light_source(self, light_source: PointLight) -> Self {
+        let mut light_sources = self.light_sources;
+        light_sources.push(light_source);
+
         Self {
-            light_sources: light_sources.to_vec(),
+            light_sources,
+            ..self
+        }
+    }
+
+    pub fn light_sources(self, light_sources: &[PointLight]) -> Self {
+        let mut existing_light_sources = self.light_sources;
+        existing_light_sources.append(&mut light_sources.to_vec());
+
+        Self {
+            light_sources: existing_light_sources,
             ..self
         }
     }
@@ -44,6 +57,7 @@ impl World {
     pub fn objects(self, objects: &[Sphere]) -> Self {
         let mut existing_objects = self.objects;
         existing_objects.append(&mut objects.to_vec());
+
         Self {
             objects: existing_objects,
             ..self
@@ -96,10 +110,13 @@ impl World {
         self.light_sources
             .iter()
             .map(|&light| {
-                comps
-                    .object
-                    .material
-                    .lighting(light, comps.point, comps.eyev, comps.normalv, false)
+                comps.object.material.lighting(
+                    light,
+                    comps.point,
+                    comps.eyev,
+                    comps.normalv,
+                    self.is_shadowed(comps.over_point),
+                )
             })
             .fold(Color::default(), |acc, c| acc + c)
     }
@@ -131,7 +148,11 @@ impl Default for World {
 #[cfg(test)]
 mod tests {
     use crate::{
-        color::Color, material::Material, matrix::transform::Transform, ray::Ray, tuple::Tuple,
+        color::Color,
+        material::Material,
+        matrix::transform::Transform,
+        ray::{intersections::Intersection, Ray},
+        tuple::Tuple,
     };
     use float_cmp::ApproxEq;
 
@@ -239,5 +260,26 @@ mod tests {
         let p = Tuple::point(-2.0, 2.0, -2.0);
 
         assert!(!w.is_shadowed(p));
+    }
+
+    #[test]
+    fn shade_hit_is_given_an_intersection_in_shadow() {
+        let w = World::new()
+            .light_source(
+                PointLight::default()
+                    .position(0.0, 0.0, -10.0)
+                    .intensity(1.0, 1.0, 1.0),
+            )
+            .object(Sphere::default())
+            .object(Sphere::default().transform(Transform::translation(0.0, 0.0, 10.0)));
+        let r = Ray::default()
+            .origin(0.0, 0.0, 5.0)
+            .direction(0.0, 0.0, 1.0);
+        let i = Intersection::new(4.0, &w.objects[1]);
+
+        let comps = i.prepare_computations(r).unwrap();
+        let c = w.shade_hit(comps);
+
+        f_assert_eq!(c, &Color::new(0.1, 0.1, 0.1));
     }
 }

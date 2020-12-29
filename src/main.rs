@@ -101,7 +101,7 @@ fn main() {
             Color::new(1.0, 1.0, 1.0),
         )]);
 
-    let camera = Camera::new(500, 250, PI / 3.0).transform(
+    let camera = Camera::new(100, 50, PI / 3.0).transform(
         Tuple::point(0.0, 1.5, -5.0),
         Tuple::point(0.0, 1.0, 0.0),
         Tuple::vector(0.0, 1.0, 0.0),

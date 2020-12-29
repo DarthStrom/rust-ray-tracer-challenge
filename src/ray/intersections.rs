@@ -3,6 +3,7 @@ use std::{iter::FromIterator, ops::Index};
 use crate::{
     sphere::Sphere,
     tuple::{dot, Tuple},
+    MARGIN,
 };
 
 use super::Ray;
@@ -30,6 +31,7 @@ impl<'a> Intersection<'a> {
             t: self.t,
             object: self.object,
             point,
+            over_point: point + normalv * MARGIN.epsilon,
             eyev,
             normalv,
             inside,
@@ -87,6 +89,7 @@ pub struct Computations<'a> {
     t: f64,
     pub object: &'a Sphere,
     pub point: Tuple,
+    pub over_point: Tuple,
     pub eyev: Tuple,
     pub normalv: Tuple,
     inside: bool,
@@ -97,7 +100,10 @@ mod tests {
     use float_cmp::ApproxEq;
     use light::PointLight;
 
-    use crate::{color::Color, light, ray::Ray, tuple::Tuple, world::World};
+    use crate::{
+        color::Color, light, matrix::transform::Transform, ray::Ray, tuple::Tuple, world::World,
+        MARGIN,
+    };
 
     use super::*;
 
@@ -232,5 +238,19 @@ mod tests {
         let c = w.shade_hit(comps);
 
         f_assert_eq!(c, &Color::new(0.90498, 0.90498, 0.90498));
+    }
+
+    #[test]
+    fn the_hit_should_offset_the_point() {
+        let r = Ray::default()
+            .origin(0.0, 0.0, -5.0)
+            .direction(0.0, 0.0, 1.0);
+        let shape = Sphere::default().transform(Transform::translation(0.0, 0.0, 1.0));
+        let i = Intersection::new(5.0, &shape);
+
+        let comps = i.prepare_computations(r).unwrap();
+
+        assert!(comps.over_point.z < -MARGIN.epsilon / 2.0);
+        assert!(comps.point.z > comps.over_point.z);
     }
 }
