@@ -80,7 +80,7 @@ impl World {
                 comps
                     .object
                     .material
-                    .lighting(light, comps.point, comps.eyev, comps.normalv)
+                    .lighting(light, comps.point, comps.eyev, comps.normalv, false)
             })
             .fold(Color::default(), |acc, c| acc + c)
     }

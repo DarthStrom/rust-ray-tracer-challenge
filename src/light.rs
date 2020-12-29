@@ -1,6 +1,6 @@
 use crate::{color::Color, tuple::Tuple};
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct PointLight {
     pub position: Tuple,
     pub intensity: Color,
@@ -11,6 +11,20 @@ impl PointLight {
         Self {
             position,
             intensity,
+        }
+    }
+
+    pub fn position(self, x: f64, y: f64, z: f64) -> Self {
+        Self {
+            position: Tuple::point(x, y, z),
+            ..self
+        }
+    }
+
+    pub fn intensity(self, r: f64, g: f64, b: f64) -> Self {
+        Self {
+            intensity: Color::new(r, g, b),
+            ..self
         }
     }
 }
