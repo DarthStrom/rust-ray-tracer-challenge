@@ -15,8 +15,8 @@ use crate::{
 };
 
 pub struct World {
-    pub objects: Vec<Sphere>,
     pub light_sources: Vec<PointLight>,
+    pub objects: Vec<Sphere>,
 }
 
 impl World {
@@ -24,6 +24,29 @@ impl World {
         Self {
             objects: vec![],
             light_sources: vec![],
+        }
+    }
+
+    pub fn light_sources(self, light_sources: &[PointLight]) -> Self {
+        Self {
+            light_sources: light_sources.to_vec(),
+            ..self
+        }
+    }
+
+    pub fn object(self, object: Sphere) -> Self {
+        let mut objects = self.objects;
+        objects.push(object);
+
+        Self { objects, ..self }
+    }
+
+    pub fn objects(self, objects: &[Sphere]) -> Self {
+        let mut existing_objects = self.objects;
+        existing_objects.append(&mut objects.to_vec());
+        Self {
+            objects: existing_objects,
+            ..self
         }
     }
 
@@ -65,13 +88,13 @@ impl World {
 
 impl Default for World {
     fn default() -> Self {
-        let mut s1 = Sphere::default();
-        s1.material = Material::default()
-            .color(Color::new(0.8, 1.0, 0.6))
-            .diffuse(0.7)
-            .specular(0.2);
-        let mut s2 = Sphere::default();
-        s2.set_transform(Transform::scaling(0.5, 0.5, 0.5));
+        let s1 = Sphere::default().material(
+            Material::default()
+                .color(Color::new(0.8, 1.0, 0.6))
+                .diffuse(0.7)
+                .specular(0.2),
+        );
+        let s2 = Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5));
         let objects = vec![s1, s2];
 
         let light_sources = vec![PointLight::new(
@@ -106,13 +129,13 @@ mod tests {
     #[test]
     fn default_world() {
         let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
-        let mut s1 = Sphere::default();
-        s1.material = Material::default()
-            .color(Color::new(0.8, 1.0, 0.6))
-            .diffuse(0.7)
-            .specular(0.2);
-        let mut s2 = Sphere::default();
-        s2.set_transform(Transform::scaling(0.5, 0.5, 0.5));
+        let s1 = Sphere::default().material(
+            Material::default()
+                .color(Color::new(0.8, 1.0, 0.6))
+                .diffuse(0.7)
+                .specular(0.2),
+        );
+        let s2 = Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5));
 
         let w = World::default();
 

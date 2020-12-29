@@ -138,7 +138,7 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
         let mut s = Sphere::default();
 
-        s.set_transform(Transform::scaling(2.0, 2.0, 2.0));
+        s = s.transform(Transform::scaling(2.0, 2.0, 2.0));
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
@@ -151,7 +151,7 @@ mod tests {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
         let mut s = Sphere::default();
 
-        s.set_transform(Transform::translation(5.0, 0.0, 0.0));
+        s = s.transform(Transform::translation(5.0, 0.0, 0.0));
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 0);

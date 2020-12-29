@@ -51,6 +51,11 @@ impl Camera {
         image
     }
 
+    pub fn transform(self, from: Tuple, to: Tuple, up: Tuple) -> Self {
+        let transform = Transform::view_transform(from, to, up);
+        Self { transform, ..self }
+    }
+
     fn aspect(&self) -> f64 {
         self.hsize as f64 / self.vsize as f64
     }

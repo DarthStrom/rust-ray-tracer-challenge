@@ -39,63 +39,69 @@ mod world;
 #[cfg(test)]
 mod test;
 
+// TODO: make the API more consistent based on this usage
+
 fn main() {
-    let mut floor = Sphere::default();
-    floor.set_transform(Transform::scaling(10.0, 0.01, 10.0));
-    floor.material = Material::default()
+    let floor_material = Material::default()
         .color(Color::new(1.0, 0.9, 0.9))
         .specular(0.0);
+    let floor = Sphere::default()
+        .transform(Transform::scaling(10.0, 0.01, 10.0))
+        .material(floor_material);
 
-    let mut left_wall = Sphere::default();
-    left_wall.set_transform(
-        Transform::identity()
-            .scale(10.0, 0.01, 10.0)
-            .rotate_x(PI / 2.0)
-            .rotate_y(-PI / 4.0)
-            .translate(0.0, 0.0, 5.0),
-    );
-    left_wall.material = floor.material;
+    let left_wall = Sphere::default()
+        .transform(
+            Transform::scaling(10.0, 0.01, 10.0)
+                .rotate_x(PI / 2.0)
+                .rotate_y(-PI / 4.0)
+                .translate(0.0, 0.0, 5.0),
+        )
+        .material(floor_material);
 
-    let mut right_wall = Sphere::default();
-    right_wall.set_transform(
-        Transform::identity()
-            .scale(10.0, 0.01, 10.0)
-            .rotate_x(PI / 2.0)
-            .rotate_y(PI / 4.0)
-            .translate(0.0, 0.0, 5.0),
-    );
-    right_wall.material = floor.material;
+    let right_wall = Sphere::default()
+        .transform(
+            Transform::scaling(10.0, 0.01, 10.0)
+                .rotate_x(PI / 2.0)
+                .rotate_y(PI / 4.0)
+                .translate(0.0, 0.0, 5.0),
+        )
+        .material(floor_material);
 
-    let mut middle = Sphere::default();
-    middle.set_transform(Transform::translation(-0.5, 1.0, 0.5));
-    middle.material = Material::default()
-        .color(Color::new(0.1, 1.0, 0.5))
-        .diffuse(0.7)
-        .specular(0.3);
+    let middle = Sphere::default()
+        .transform(Transform::translation(-0.5, 1.0, 0.5))
+        .material(
+            Material::default()
+                .color(Color::new(0.1, 1.0, 0.5))
+                .diffuse(0.7)
+                .specular(0.3),
+        );
 
-    let mut right = Sphere::default();
-    right.set_transform(Transform::scaling(0.5, 0.5, 0.5).translate(1.5, 0.5, -0.5));
-    right.material = Material::default()
-        .color(Color::new(0.5, 1.0, 0.1))
-        .diffuse(0.7)
-        .specular(0.3);
+    let right = Sphere::default()
+        .transform(Transform::scaling(0.5, 0.5, 0.5).translate(1.5, 0.5, -0.5))
+        .material(
+            Material::default()
+                .color(Color::new(0.5, 1.0, 0.1))
+                .diffuse(0.7)
+                .specular(0.3),
+        );
 
-    let mut left = Sphere::default();
-    left.set_transform(Transform::scaling(0.33, 0.33, 0.33).translate(-1.5, 0.33, -0.75));
-    left.material = Material::default()
-        .color(Color::new(1.0, 0.8, 0.1))
-        .diffuse(0.7)
-        .specular(0.3);
+    let left = Sphere::default()
+        .transform(Transform::scaling(0.33, 0.33, 0.33).translate(-1.5, 0.33, -0.75))
+        .material(
+            Material::default()
+                .color(Color::new(1.0, 0.8, 0.1))
+                .diffuse(0.7)
+                .specular(0.3),
+        );
 
-    let mut world = World::new();
-    world.objects = vec![floor, left_wall, right_wall, middle, right, left];
-    world.light_sources = vec![PointLight::new(
-        Tuple::point(-10.0, 10.0, -10.0),
-        Color::new(1.0, 1.0, 1.0),
-    )];
+    let world = World::new()
+        .objects(&[floor, left_wall, right_wall, middle, right, left])
+        .light_sources(&[PointLight::new(
+            Tuple::point(-10.0, 10.0, -10.0),
+            Color::new(1.0, 1.0, 1.0),
+        )]);
 
-    let mut camera = Camera::new(100, 50, PI / 3.0);
-    camera.transform = Transform::view_transform(
+    let camera = Camera::new(500, 250, PI / 3.0).transform(
         Tuple::point(0.0, 1.5, -5.0),
         Tuple::point(0.0, 1.0, 0.0),
         Tuple::vector(0.0, 1.0, 0.0),

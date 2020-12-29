@@ -45,8 +45,12 @@ impl Sphere {
         ])
     }
 
-    pub fn set_transform(&mut self, transform: Transform) {
-        self.transform = transform;
+    pub fn material(self, material: Material) -> Self {
+        Self { material, ..self }
+    }
+
+    pub fn transform(self, transform: Transform) -> Self {
+        Self { transform, ..self }
     }
 
     pub fn normal_at(&self, world_point: Tuple) -> Result<Tuple, String> {
@@ -93,7 +97,7 @@ mod tests {
         let mut m = Material::default();
         m.ambient = 1.0;
 
-        s.material = m;
+        s = s.material(m);
         assert_eq!(s.material, m);
     }
 
@@ -109,7 +113,7 @@ mod tests {
         let mut s = Sphere::default();
         let t = Transform::translation(2.0, 3.0, 4.0);
 
-        s.set_transform(t.clone());
+        s = s.transform(t.clone());
 
         assert_eq!(s.transform, t);
     }
@@ -176,8 +180,7 @@ mod tests {
 
     #[test]
     fn normal_on_a_translated_sphere() {
-        let mut s = Sphere::default();
-        s.set_transform(Transform::translation(0.0, 1.0, 0.0));
+        let s = Sphere::default().transform(Transform::translation(0.0, 1.0, 0.0));
 
         let n = s
             .normal_at(Tuple::point(0.0, 1.0 + FRAC_1_SQRT_2, -FRAC_1_SQRT_2))
@@ -190,9 +193,8 @@ mod tests {
 
     #[test]
     fn normal_on_a_transformed_sphere() {
-        let mut s = Sphere::default();
         let m = Transform::scaling(1.0, 0.5, 1.0) * Transform::rotation_z(PI / 5.0);
-        s.set_transform(m);
+        let s = Sphere::default().transform(m);
 
         let n = s
             .normal_at(Tuple::point(0.0, sqrt_n_over_n(2), -sqrt_n_over_n(2)))
