@@ -10,13 +10,13 @@ use crate::{
         intersections::{Computations, Intersections},
         Ray,
     },
-    sphere::Sphere,
+    shape::{sphere::Sphere, Shape, Shapes},
     tuple::Tuple,
 };
 
 pub struct World {
     pub light_sources: Vec<PointLight>,
-    pub objects: Vec<Sphere>,
+    pub objects: Vec<Shapes>,
 }
 
 impl World {
@@ -47,14 +47,14 @@ impl World {
         }
     }
 
-    pub fn object(self, object: Sphere) -> Self {
+    pub fn object(self, object: Shapes) -> Self {
         let mut objects = self.objects;
         objects.push(object);
 
         Self { objects, ..self }
     }
 
-    pub fn objects(self, objects: &[Sphere]) -> Self {
+    pub fn objects(self, objects: &[Shapes]) -> Self {
         let mut existing_objects = self.objects;
         existing_objects.append(&mut objects.to_vec());
 
@@ -109,14 +109,15 @@ impl World {
     pub fn shade_hit(&self, comps: Computations) -> Color {
         self.light_sources
             .iter()
-            .map(|&light| {
-                comps.object.material.lighting(
+            .map(|&light| match &comps.object {
+                Shapes::Sphere(s) => s.material.lighting(
                     light,
                     comps.point,
                     comps.eyev,
                     comps.normalv,
                     self.is_shadowed(comps.over_point),
-                )
+                ),
+                Shapes::Plane(_) => Color::default(),
             })
             .fold(Color::default(), |acc, c| acc + c)
     }
@@ -124,13 +125,15 @@ impl World {
 
 impl Default for World {
     fn default() -> Self {
-        let s1 = Sphere::default().material(
-            Material::default()
-                .color(Color::new(0.8, 1.0, 0.6))
-                .diffuse(0.7)
-                .specular(0.2),
+        let s1 = Shapes::Sphere(
+            Sphere::default().material(
+                Material::default()
+                    .color(Color::new(0.8, 1.0, 0.6))
+                    .diffuse(0.7)
+                    .specular(0.2),
+            ),
         );
-        let s2 = Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5));
+        let s2 = Shapes::Sphere(Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5)));
         let objects = vec![s1, s2];
 
         let light_sources = vec![PointLight::new(
@@ -169,18 +172,21 @@ mod tests {
     #[test]
     fn default_world() {
         let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
-        let s1 = Sphere::default().material(
-            Material::default()
-                .color(Color::new(0.8, 1.0, 0.6))
-                .diffuse(0.7)
-                .specular(0.2),
+        let s1 = Shapes::Sphere(
+            Sphere::default().material(
+                Material::default()
+                    .color(Color::new(0.8, 1.0, 0.6))
+                    .diffuse(0.7)
+                    .specular(0.2),
+            ),
         );
-        let s2 = Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5));
+        let s2 = Shapes::Sphere(Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5)));
 
         let w = World::default();
 
         assert_eq!(w.light_sources, vec![light]);
-        assert_eq!(w.objects, vec![s1, s2]);
+        assert_eq!(w.objects[0], s1);
+        assert_eq!(w.objects[1], s2);
     }
 
     #[test]
@@ -220,14 +226,20 @@ mod tests {
     #[test]
     fn color_whith_an_intersection_behind_ray() {
         let mut w = World::default();
-        w.objects[0].material.ambient = 1.0;
-        w.objects[1].material.ambient = 1.0;
-        let inner = &w.objects[1];
-        let r = Ray::new(Tuple::point(0.0, 0.0, 0.75), Tuple::vector(0.0, 0.0, -1.0));
+        if let Shapes::Sphere(s1) = &mut w.objects[0] {
+            s1.material.ambient = 1.0;
+        }
+        if let Shapes::Sphere(s2) = &mut w.objects[1] {
+            s2.material.ambient = 1.0;
+            let inner = s2.clone();
+            let r = Ray::new(Tuple::point(0.0, 0.0, 0.75), Tuple::vector(0.0, 0.0, -1.0));
 
-        let c = w.color_at(r);
+            let c = w.color_at(r);
 
-        f_assert_eq!(c, &inner.material.color);
+            f_assert_eq!(c, &inner.material.color);
+        } else {
+            panic!("not a sphere");
+        }
     }
 
     #[test]
@@ -270,12 +282,14 @@ mod tests {
                     .position(0.0, 0.0, -10.0)
                     .intensity(1.0, 1.0, 1.0),
             )
-            .object(Sphere::default())
-            .object(Sphere::default().transform(Transform::translation(0.0, 0.0, 10.0)));
+            .object(Shapes::Sphere(Sphere::default()))
+            .object(Shapes::Sphere(
+                Sphere::default().transform(Transform::translation(0.0, 0.0, 10.0)),
+            ));
         let r = Ray::default()
             .origin(0.0, 0.0, 5.0)
             .direction(0.0, 0.0, 1.0);
-        let i = Intersection::new(4.0, &w.objects[1]);
+        let i = Intersection::new(4.0, w.objects[1].clone());
 
         let comps = i.prepare_computations(r).unwrap();
         let c = w.shade_hit(comps);

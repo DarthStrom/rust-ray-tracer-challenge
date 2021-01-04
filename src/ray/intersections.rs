@@ -1,35 +1,35 @@
 use std::{iter::FromIterator, ops::Index};
 
 use crate::{
-    sphere::Sphere,
+    shape::{Shape, Shapes},
     tuple::{dot, Tuple},
     MARGIN,
 };
 
 use super::Ray;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Intersection<'a> {
+#[derive(Clone, Debug, PartialEq)]
+pub struct Intersection {
     pub t: f64,
-    pub object: &'a Sphere,
+    pub object: Shapes,
 }
 
-impl<'a> Intersection<'a> {
-    pub fn new(t: f64, object: &'a Sphere) -> Self {
+impl Intersection {
+    pub fn new(t: f64, object: Shapes) -> Self {
         Self { t, object }
     }
 
     pub fn prepare_computations(&self, ray: Ray) -> Result<Computations, String> {
         let point = ray.position(self.t);
         let eyev = -ray.direction;
-        let mut normalv = self.object.normal_at(point)?;
+        let mut normalv = self.object.normal_at(point.x, point.y, point.z)?;
         let inside = dot(normalv, eyev) < 0.0;
         if inside {
             normalv = -normalv;
         }
         Ok(Computations {
             t: self.t,
-            object: self.object,
+            object: self.object.clone(),
             point,
             over_point: point + normalv * MARGIN.epsilon,
             eyev,
@@ -40,18 +40,18 @@ impl<'a> Intersection<'a> {
 }
 
 #[derive(Debug, Default)]
-pub struct Intersections<'a> {
-    pub data: Vec<Intersection<'a>>,
+pub struct Intersections {
+    pub data: Vec<Intersection>,
 }
 
-impl<'a> Intersections<'a> {
-    pub fn new(intersections: Vec<Intersection<'a>>) -> Self {
+impl Intersections {
+    pub fn new(intersections: Vec<Intersection>) -> Self {
         Self {
             data: intersections,
         }
     }
 
-    pub fn hit(&self) -> Option<&Intersection<'a>> {
+    pub fn hit(&self) -> Option<&Intersection> {
         self.data
             .iter()
             .filter(|i| i.t >= 0.0)
@@ -62,21 +62,21 @@ impl<'a> Intersections<'a> {
         self.data.len()
     }
 
-    pub fn append(&mut self, other: &mut Intersections<'a>) {
+    pub fn append(&mut self, other: &mut Intersections) {
         self.data.append(&mut other.data);
     }
 }
 
-impl<'a> Index<usize> for Intersections<'a> {
-    type Output = Intersection<'a>;
+impl Index<usize> for Intersections {
+    type Output = Intersection;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.data[index]
     }
 }
 
-impl<'a> FromIterator<Intersection<'a>> for Intersections<'a> {
-    fn from_iter<T: IntoIterator<Item = Intersection<'a>>>(iter: T) -> Self {
+impl FromIterator<Intersection> for Intersections {
+    fn from_iter<T: IntoIterator<Item = Intersection>>(iter: T) -> Self {
         let mut result = Self { data: vec![] };
         for i in iter {
             result.data.push(i);
@@ -85,9 +85,9 @@ impl<'a> FromIterator<Intersection<'a>> for Intersections<'a> {
     }
 }
 
-pub struct Computations<'a> {
+pub struct Computations {
     t: f64,
-    pub object: &'a Sphere,
+    pub object: Shapes,
     pub point: Tuple,
     pub over_point: Tuple,
     pub eyev: Tuple,
@@ -101,27 +101,27 @@ mod tests {
     use light::PointLight;
 
     use crate::{
-        color::Color, light, matrix::transform::Transform, ray::Ray, tuple::Tuple, world::World,
-        MARGIN,
+        color::Color, light, matrix::transform::Transform, ray::Ray, shape::sphere::Sphere,
+        tuple::Tuple, world::World, MARGIN,
     };
 
     use super::*;
 
     #[test]
     fn intersection_encapsulates_t_and_object() {
-        let s = Sphere::default();
+        let s = Shapes::Sphere(Sphere::default());
 
-        let i = Intersection::new(3.5, &s);
+        let i = Intersection::new(3.5, s.clone());
 
         f_assert_eq!(i.t, 3.5);
-        assert_eq!(i.object, &s);
+        assert_eq!(i.object, s);
     }
 
     #[test]
     fn aggregating_intersections() {
-        let s = Sphere::default();
-        let i1 = Intersection::new(1.0, &s);
-        let i2 = Intersection::new(2.0, &s);
+        let s = Shapes::Sphere(Sphere::default());
+        let i1 = Intersection::new(1.0, s.clone());
+        let i2 = Intersection::new(2.0, s);
 
         let xs = Intersections::new(vec![i1, i2]);
 
@@ -132,10 +132,10 @@ mod tests {
 
     #[test]
     fn the_hit_when_all_intersections_have_positive_t() {
-        let s = Sphere::default();
-        let i1 = Intersection::new(1.0, &s);
-        let i2 = Intersection::new(2.0, &s);
-        let xs = Intersections::new(vec![i2, i1]);
+        let s = Shapes::Sphere(Sphere::default());
+        let i1 = Intersection::new(1.0, s.clone());
+        let i2 = Intersection::new(2.0, s);
+        let xs = Intersections::new(vec![i2, i1.clone()]);
 
         let i = xs.hit();
 
@@ -144,10 +144,10 @@ mod tests {
 
     #[test]
     fn the_hit_when_some_intersections_have_negative_t() {
-        let s = Sphere::default();
-        let i1 = Intersection::new(-1.0, &s);
-        let i2 = Intersection::new(1.0, &s);
-        let xs = Intersections::new(vec![i2, i1]);
+        let s = Shapes::Sphere(Sphere::default());
+        let i1 = Intersection::new(-1.0, s.clone());
+        let i2 = Intersection::new(1.0, s);
+        let xs = Intersections::new(vec![i2.clone(), i1]);
 
         let i = xs.hit();
 
@@ -156,9 +156,9 @@ mod tests {
 
     #[test]
     fn the_hit_when_all_intersections_have_negative_t() {
-        let s = Sphere::default();
-        let i1 = Intersection::new(-2.0, &s);
-        let i2 = Intersection::new(-1.0, &s);
+        let s = Shapes::Sphere(Sphere::default());
+        let i1 = Intersection::new(-2.0, s.clone());
+        let i2 = Intersection::new(-1.0, s);
         let xs = Intersections::new(vec![i2, i1]);
 
         let i = xs.hit();
@@ -168,12 +168,12 @@ mod tests {
 
     #[test]
     fn the_hit_is_always_the_lowest_nonnegative_intersection() {
-        let s = Sphere::default();
-        let i1 = Intersection::new(5.0, &s);
-        let i2 = Intersection::new(7.0, &s);
-        let i3 = Intersection::new(-3.0, &s);
-        let i4 = Intersection::new(2.0, &s);
-        let xs = Intersections::new(vec![i1, i2, i3, i4]);
+        let s = Shapes::Sphere(Sphere::default());
+        let i1 = Intersection::new(5.0, s.clone());
+        let i2 = Intersection::new(7.0, s.clone());
+        let i3 = Intersection::new(-3.0, s.clone());
+        let i4 = Intersection::new(2.0, s);
+        let xs = Intersections::new(vec![i1, i2, i3, i4.clone()]);
 
         let i = xs.hit();
 
@@ -183,8 +183,8 @@ mod tests {
     #[test]
     fn precomputing_the_state_of_an_intersection() {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-        let shape = Sphere::default();
-        let i = Intersection::new(4.0, &shape);
+        let shape = Shapes::Sphere(Sphere::default());
+        let i = Intersection::new(4.0, shape);
 
         let comps = i.prepare_computations(r).unwrap();
 
@@ -199,8 +199,8 @@ mod tests {
     #[test]
     fn the_hit_when_an_intersection_occurs_on_the_inside() {
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
-        let shape = Sphere::default();
-        let i = Intersection::new(1.0, &shape);
+        let shape = Shapes::Sphere(Sphere::default());
+        let i = Intersection::new(1.0, shape);
 
         let comps = i.prepare_computations(r).unwrap();
 
@@ -214,8 +214,7 @@ mod tests {
     fn shading_an_intersection() {
         let w = World::default();
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-        let shape = &w.objects[0];
-        let i = Intersection::new(4.0, shape);
+        let i = Intersection::new(4.0, w.objects[0].clone());
 
         let comps = i.prepare_computations(r).unwrap();
         let c = w.shade_hit(comps);
@@ -231,7 +230,7 @@ mod tests {
             Color::new(1.0, 1.0, 1.0),
         )];
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
-        let shape = &w.objects[1];
+        let shape = w.objects[1].clone();
         let i = Intersection::new(0.5, shape);
 
         let comps = i.prepare_computations(r).unwrap();
@@ -245,8 +244,9 @@ mod tests {
         let r = Ray::default()
             .origin(0.0, 0.0, -5.0)
             .direction(0.0, 0.0, 1.0);
-        let shape = Sphere::default().transform(Transform::translation(0.0, 0.0, 1.0));
-        let i = Intersection::new(5.0, &shape);
+        let shape =
+            Shapes::Sphere(Sphere::default().transform(Transform::translation(0.0, 0.0, 1.0)));
+        let i = Intersection::new(5.0, shape);
 
         let comps = i.prepare_computations(r).unwrap();
 

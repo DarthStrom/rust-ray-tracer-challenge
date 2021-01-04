@@ -8,16 +8,28 @@ use crate::{
     tuple::{dot, Tuple},
 };
 
+use super::{Shape, Shapes};
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Sphere {
     pub center: Tuple,
     pub radius: f64,
-    pub transform: Transform,
     pub material: Material,
+    pub transform: Transform,
 }
 
 impl Sphere {
-    pub fn intersect(&self, ray: Ray) -> Intersections {
+    pub fn material(self, material: Material) -> Self {
+        Self { material, ..self }
+    }
+
+    pub fn transform(self, transform: Transform) -> Self {
+        Self { transform, ..self }
+    }
+}
+
+impl Shape for Sphere {
+    fn intersect(&self, ray: Ray) -> Intersections {
         let ray = if self.transform.is_invertible() {
             ray.transform(self.transform.inverse().unwrap())
         } else {
@@ -40,20 +52,13 @@ impl Sphere {
         let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
 
         Intersections::new(vec![
-            Intersection::new(t1, self),
-            Intersection::new(t2, self),
+            Intersection::new(t1, Shapes::Sphere(self.clone())),
+            Intersection::new(t2, Shapes::Sphere(self.clone())),
         ])
     }
 
-    pub fn material(self, material: Material) -> Self {
-        Self { material, ..self }
-    }
-
-    pub fn transform(self, transform: Transform) -> Self {
-        Self { transform, ..self }
-    }
-
-    pub fn normal_at(&self, world_point: Tuple) -> Result<Tuple, String> {
+    fn normal_at(&self, x: f64, y: f64, z: f64) -> Result<Tuple, String> {
+        let world_point = Tuple::point(x, y, z);
         let object_point = self.transform.inverse()? * world_point;
         let object_normal = object_point - Tuple::point(0.0, 0.0, 0.0);
         let mut world_normal = self.transform.inverse()?.transpose() * object_normal;
@@ -67,8 +72,8 @@ impl Default for Sphere {
         Self {
             center: Tuple::point(0.0, 0.0, 0.0),
             radius: 1.0,
-            transform: Transform::identity(),
             material: Material::default(),
+            transform: Transform::identity(),
         }
     }
 }
@@ -122,7 +127,7 @@ mod tests {
     fn normal_at_a_point_on_x_axis() {
         let s = Sphere::default();
 
-        let n = s.normal_at(Tuple::point(1.0, 0.0, 0.0)).unwrap();
+        let n = s.normal_at(1.0, 0.0, 0.0).unwrap();
 
         assert_eq!(n, Tuple::vector(1.0, 0.0, 0.0));
     }
@@ -131,7 +136,7 @@ mod tests {
     fn normal_at_a_point_on_y_axis() {
         let s = Sphere::default();
 
-        let n = s.normal_at(Tuple::point(0.0, 1.0, 0.0)).unwrap();
+        let n = s.normal_at(0.0, 1.0, 0.0).unwrap();
 
         assert_eq!(n, Tuple::vector(0.0, 1.0, 0.0));
     }
@@ -140,7 +145,7 @@ mod tests {
     fn normal_at_a_point_on_z_axis() {
         let s = Sphere::default();
 
-        let n = s.normal_at(Tuple::point(0.0, 0.0, 1.0)).unwrap();
+        let n = s.normal_at(0.0, 0.0, 1.0).unwrap();
 
         assert_eq!(n, Tuple::vector(0.0, 0.0, 1.0));
     }
@@ -150,11 +155,7 @@ mod tests {
         let s = Sphere::default();
 
         let n = s
-            .normal_at(Tuple::point(
-                sqrt_n_over_n(3),
-                sqrt_n_over_n(3),
-                sqrt_n_over_n(3),
-            ))
+            .normal_at(sqrt_n_over_n(3), sqrt_n_over_n(3), sqrt_n_over_n(3))
             .unwrap();
 
         assert_eq!(
@@ -168,11 +169,7 @@ mod tests {
         let s = Sphere::default();
 
         let n = s
-            .normal_at(Tuple::point(
-                sqrt_n_over_n(3),
-                sqrt_n_over_n(3),
-                sqrt_n_over_n(3),
-            ))
+            .normal_at(sqrt_n_over_n(3), sqrt_n_over_n(3), sqrt_n_over_n(3))
             .unwrap();
 
         assert_eq!(n, n.normalize());
@@ -183,7 +180,7 @@ mod tests {
         let s = Sphere::default().transform(Transform::translation(0.0, 1.0, 0.0));
 
         let n = s
-            .normal_at(Tuple::point(0.0, 1.0 + FRAC_1_SQRT_2, -FRAC_1_SQRT_2))
+            .normal_at(0.0, 1.0 + FRAC_1_SQRT_2, -FRAC_1_SQRT_2)
             .unwrap();
 
         println!("n: {:?}", n);
@@ -197,7 +194,7 @@ mod tests {
         let s = Sphere::default().transform(m);
 
         let n = s
-            .normal_at(Tuple::point(0.0, sqrt_n_over_n(2), -sqrt_n_over_n(2)))
+            .normal_at(0.0, sqrt_n_over_n(2), -sqrt_n_over_n(2))
             .unwrap();
 
         assert!(n.approx_eq(&Tuple::vector(0.0, 0.97014, -0.24254), MARGIN));

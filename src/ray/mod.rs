@@ -42,7 +42,10 @@ impl Ray {
 
 #[cfg(test)]
 mod tests {
-    use crate::{sphere::Sphere, tuple::Tuple};
+    use crate::{
+        shape::{sphere::Sphere, Shape},
+        tuple::Tuple,
+    };
     use float_cmp::ApproxEq;
 
     use super::*;

@@ -1,14 +1,12 @@
 use std::fs;
 
 use camera::Camera;
-use canvas::Canvas;
 use color::Color;
 use float_cmp::F64Margin;
 use light::PointLight;
 use material::Material;
 use matrix::transform::Transform;
-use ray::Ray;
-use sphere::Sphere;
+use shape::sphere::Sphere;
 use std::f64::consts::PI;
 use tuple::Tuple;
 use world::World;
@@ -32,7 +30,7 @@ mod light;
 mod material;
 mod matrix;
 mod ray;
-mod sphere;
+mod shape;
 mod tuple;
 mod world;
 
@@ -94,20 +92,20 @@ fn main() {
                 .specular(0.3),
         );
 
-    let world = World::new()
-        .objects(&[floor, left_wall, right_wall, middle, right, left])
-        .light_sources(&[PointLight::new(
-            Tuple::point(-10.0, 10.0, -10.0),
-            Color::new(1.0, 1.0, 1.0),
-        )]);
+    // let world = World::new()
+    //     .objects(&[floor, left_wall, right_wall, middle, right, left])
+    //     .light_sources(&[PointLight::new(
+    //         Tuple::point(-10.0, 10.0, -10.0),
+    //         Color::new(1.0, 1.0, 1.0),
+    //     )]);
 
-    let camera = Camera::new(100, 50, PI / 3.0).transform(
-        Tuple::point(0.0, 1.5, -5.0),
-        Tuple::point(0.0, 1.0, 0.0),
-        Tuple::vector(0.0, 1.0, 0.0),
-    );
+    // let camera = Camera::new(100, 50, PI / 3.0).transform(
+    //     Tuple::point(0.0, 1.5, -5.0),
+    //     Tuple::point(0.0, 1.0, 0.0),
+    //     Tuple::vector(0.0, 1.0, 0.0),
+    // );
 
-    let c = camera.render(&world);
+    // let c = camera.render(&world);
 
-    fs::write("canvas.ppm", c.to_ppm()).unwrap();
+    // fs::write("canvas.ppm", c.to_ppm()).unwrap();
 }
