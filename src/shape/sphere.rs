@@ -99,8 +99,10 @@ mod tests {
     #[test]
     fn changing_material() {
         let mut s = Sphere::default();
-        let mut m = Material::default();
-        m.ambient = 1.0;
+        let m = Material {
+            ambient: 1.0,
+            ..Material::default()
+        };
 
         s = s.material(m);
         assert_eq!(s.material, m);

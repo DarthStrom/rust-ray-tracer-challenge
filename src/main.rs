@@ -29,6 +29,7 @@ mod color;
 mod light;
 mod material;
 mod matrix;
+mod pattern;
 mod ray;
 mod shape;
 mod tuple;

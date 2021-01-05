@@ -1,6 +1,7 @@
 use crate::{
     color::Color,
     light::PointLight,
+    pattern::StripePattern,
     tuple::{dot, Tuple},
 };
 
@@ -11,6 +12,7 @@ pub struct Material {
     pub diffuse: f64,
     pub specular: f64,
     pub shininess: f64,
+    pub pattern: Option<StripePattern>,
 }
 
 impl Material {
@@ -42,7 +44,12 @@ impl Material {
         normalv: Tuple,
         in_shadow: bool,
     ) -> Color {
-        let effective_color = self.color * light.intensity;
+        let color = if let Some(pattern) = self.pattern {
+            pattern.stripe_at(point)
+        } else {
+            self.color
+        };
+        let effective_color = color * light.intensity;
         let lightv = (light.position - point).normalize();
         let ambient = effective_color * self.ambient;
         let light_dot_normal = dot(lightv, normalv);
@@ -74,6 +81,7 @@ impl Default for Material {
             diffuse: 0.9,
             specular: 0.9,
             shininess: 200.0,
+            pattern: None,
         }
     }
 }
@@ -85,7 +93,9 @@ fn light_behind_surface(light_dot_normal: f64) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{light::PointLight, test::sqrt_n_over_n, tuple::Tuple, MARGIN};
+    use crate::{
+        light::PointLight, pattern::StripePattern, test::sqrt_n_over_n, tuple::Tuple, MARGIN,
+    };
     use float_cmp::ApproxEq;
 
     #[test]
@@ -172,6 +182,26 @@ mod tests {
         let result = m.lighting(light, position, eyev, normalv, in_shadow);
 
         f_assert_eq!(result, &Color::new(0.1, 0.1, 0.1));
+    }
+
+    #[test]
+    fn lighting_with_pattern_applied() {
+        let (mut m, _) = shared_setup();
+        m.pattern = Some(StripePattern::new(Color::white(), Color::black()));
+        m.ambient = 1.0;
+        m.diffuse = 0.0;
+        m.specular = 0.0;
+        let eyev = Tuple::vector(0.0, 0.0, -1.0);
+        let normalv = Tuple::vector(0.0, 0.0, -1.0);
+        let light = PointLight::default()
+            .position(0.0, 0.0, -10.0)
+            .intensity(1.0, 1.0, 1.0);
+
+        let c1 = m.lighting(light, Tuple::point(0.9, 0.0, 0.0), eyev, normalv, false);
+        let c2 = m.lighting(light, Tuple::point(1.1, 0.0, 0.0), eyev, normalv, false);
+
+        f_assert_eq!(c1, &Color::white());
+        f_assert_eq!(c2, &Color::black());
     }
 
     fn shared_setup() -> (Material, Tuple) {
