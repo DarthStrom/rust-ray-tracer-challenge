@@ -1,4 +1,5 @@
 use crate::{
+    matrix::transform::Transform,
     ray::{
         intersections::{Intersection, Intersections},
         Ray,
@@ -7,10 +8,18 @@ use crate::{
     MARGIN,
 };
 
-use super::{Shape, Shapes};
+use super::{Object, Shape};
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Plane {}
+pub struct Plane {
+    pub transform: Transform,
+}
+
+impl Plane {
+    fn transform(self, transform: Transform) -> Self {
+        Self { transform, ..self }
+    }
+}
 
 impl Shape for Plane {
     fn intersect(&self, ray: Ray) -> Intersections {
@@ -18,12 +27,16 @@ impl Shape for Plane {
             Intersections::new(vec![])
         } else {
             let t = -ray.origin.y / ray.direction.y;
-            Intersections::new(vec![Intersection::new(t, Shapes::Plane(self.clone()))])
+            Intersections::new(vec![Intersection::new(t, Object::Plane(self.clone()))])
         }
     }
 
     fn normal_at(&self, x: f64, y: f64, z: f64) -> Result<Tuple, String> {
         Ok(Tuple::vector(0.0, 1.0, 0.0))
+    }
+
+    fn transform(&self) -> Transform {
+        self.transform.clone()
     }
 }
 
@@ -31,7 +44,7 @@ impl Shape for Plane {
 mod tests {
     use super::*;
 
-    use crate::{ray::Ray, shape::Shapes, tuple::Tuple};
+    use crate::{ray::Ray, shape::Object, tuple::Tuple};
     use float_cmp::ApproxEq;
 
     #[test]
@@ -83,7 +96,7 @@ mod tests {
 
         assert_eq!(xs.len(), 1);
         f_assert_eq!(xs[0].t, 1.0);
-        if let Shapes::Plane(object) = &xs[0].object {
+        if let Object::Plane(object) = &xs[0].object {
             assert_eq!(object, &p);
         } else {
             panic!("not a plane");
@@ -101,7 +114,7 @@ mod tests {
 
         assert_eq!(xs.len(), 1);
         f_assert_eq!(xs[0].t, 1.0);
-        if let Shapes::Plane(object) = &xs[0].object {
+        if let Object::Plane(object) = &xs[0].object {
             assert_eq!(object, &p);
         } else {
             panic!("not a plane");

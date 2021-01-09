@@ -5,7 +5,7 @@ use crate::tuple::{cross, Tuple};
 
 use super::Matrix;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Transform {
     data: Matrix,
 }

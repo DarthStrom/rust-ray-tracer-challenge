@@ -1,7 +1,7 @@
 use std::{iter::FromIterator, ops::Index};
 
 use crate::{
-    shape::{Shape, Shapes},
+    shape::{Object, Shape},
     tuple::{dot, Tuple},
     MARGIN,
 };
@@ -11,11 +11,11 @@ use super::Ray;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Intersection {
     pub t: f64,
-    pub object: Shapes,
+    pub object: Object,
 }
 
 impl Intersection {
-    pub fn new(t: f64, object: Shapes) -> Self {
+    pub fn new(t: f64, object: Object) -> Self {
         Self { t, object }
     }
 
@@ -87,7 +87,7 @@ impl FromIterator<Intersection> for Intersections {
 
 pub struct Computations {
     t: f64,
-    pub object: Shapes,
+    pub object: Object,
     pub point: Tuple,
     pub over_point: Tuple,
     pub eyev: Tuple,
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn intersection_encapsulates_t_and_object() {
-        let s = Shapes::Sphere(Sphere::default());
+        let s = Object::Sphere(Sphere::default());
 
         let i = Intersection::new(3.5, s.clone());
 
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn aggregating_intersections() {
-        let s = Shapes::Sphere(Sphere::default());
+        let s = Object::Sphere(Sphere::default());
         let i1 = Intersection::new(1.0, s.clone());
         let i2 = Intersection::new(2.0, s);
 
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn the_hit_when_all_intersections_have_positive_t() {
-        let s = Shapes::Sphere(Sphere::default());
+        let s = Object::Sphere(Sphere::default());
         let i1 = Intersection::new(1.0, s.clone());
         let i2 = Intersection::new(2.0, s);
         let xs = Intersections::new(vec![i2, i1.clone()]);
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn the_hit_when_some_intersections_have_negative_t() {
-        let s = Shapes::Sphere(Sphere::default());
+        let s = Object::Sphere(Sphere::default());
         let i1 = Intersection::new(-1.0, s.clone());
         let i2 = Intersection::new(1.0, s);
         let xs = Intersections::new(vec![i2.clone(), i1]);
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn the_hit_when_all_intersections_have_negative_t() {
-        let s = Shapes::Sphere(Sphere::default());
+        let s = Object::Sphere(Sphere::default());
         let i1 = Intersection::new(-2.0, s.clone());
         let i2 = Intersection::new(-1.0, s);
         let xs = Intersections::new(vec![i2, i1]);
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn the_hit_is_always_the_lowest_nonnegative_intersection() {
-        let s = Shapes::Sphere(Sphere::default());
+        let s = Object::Sphere(Sphere::default());
         let i1 = Intersection::new(5.0, s.clone());
         let i2 = Intersection::new(7.0, s.clone());
         let i3 = Intersection::new(-3.0, s.clone());
@@ -183,7 +183,7 @@ mod tests {
     #[test]
     fn precomputing_the_state_of_an_intersection() {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-        let shape = Shapes::Sphere(Sphere::default());
+        let shape = Object::Sphere(Sphere::default());
         let i = Intersection::new(4.0, shape);
 
         let comps = i.prepare_computations(r).unwrap();
@@ -199,7 +199,7 @@ mod tests {
     #[test]
     fn the_hit_when_an_intersection_occurs_on_the_inside() {
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
-        let shape = Shapes::Sphere(Sphere::default());
+        let shape = Object::Sphere(Sphere::default());
         let i = Intersection::new(1.0, shape);
 
         let comps = i.prepare_computations(r).unwrap();
@@ -245,7 +245,7 @@ mod tests {
             .origin(0.0, 0.0, -5.0)
             .direction(0.0, 0.0, 1.0);
         let shape =
-            Shapes::Sphere(Sphere::default().transform(Transform::translation(0.0, 0.0, 1.0)));
+            Object::Sphere(Sphere::default().transform(Transform::translation(0.0, 0.0, 1.0)));
         let i = Intersection::new(5.0, shape);
 
         let comps = i.prepare_computations(r).unwrap();

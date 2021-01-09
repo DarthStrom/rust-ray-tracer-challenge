@@ -10,13 +10,13 @@ use crate::{
         intersections::{Computations, Intersections},
         Ray,
     },
-    shape::{sphere::Sphere, Shape, Shapes},
+    shape::{sphere::Sphere, Object, Shape},
     tuple::Tuple,
 };
 
 pub struct World {
     pub light_sources: Vec<PointLight>,
-    pub objects: Vec<Shapes>,
+    pub objects: Vec<Object>,
 }
 
 impl World {
@@ -47,14 +47,14 @@ impl World {
         }
     }
 
-    pub fn object(self, object: Shapes) -> Self {
+    pub fn object(self, object: Object) -> Self {
         let mut objects = self.objects;
         objects.push(object);
 
         Self { objects, ..self }
     }
 
-    pub fn objects(self, objects: &[Shapes]) -> Self {
+    pub fn objects(self, objects: &[Object]) -> Self {
         let mut existing_objects = self.objects;
         existing_objects.append(&mut objects.to_vec());
 
@@ -110,14 +110,15 @@ impl World {
         self.light_sources
             .iter()
             .map(|&light| match &comps.object {
-                Shapes::Sphere(s) => s.material.lighting(
+                Object::Sphere(s) => s.material.lighting(
+                    &comps.object,
                     light,
                     comps.point,
                     comps.eyev,
                     comps.normalv,
                     self.is_shadowed(comps.over_point),
                 ),
-                Shapes::Plane(_) => Color::default(),
+                Object::Plane(_) => Color::default(),
             })
             .fold(Color::default(), |acc, c| acc + c)
     }
@@ -125,7 +126,7 @@ impl World {
 
 impl Default for World {
     fn default() -> Self {
-        let s1 = Shapes::Sphere(
+        let s1 = Object::Sphere(
             Sphere::default().material(
                 Material::default()
                     .color(Color::new(0.8, 1.0, 0.6))
@@ -133,7 +134,7 @@ impl Default for World {
                     .specular(0.2),
             ),
         );
-        let s2 = Shapes::Sphere(Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5)));
+        let s2 = Object::Sphere(Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5)));
         let objects = vec![s1, s2];
 
         let light_sources = vec![PointLight::new(
@@ -172,7 +173,7 @@ mod tests {
     #[test]
     fn default_world() {
         let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
-        let s1 = Shapes::Sphere(
+        let s1 = Object::Sphere(
             Sphere::default().material(
                 Material::default()
                     .color(Color::new(0.8, 1.0, 0.6))
@@ -180,7 +181,7 @@ mod tests {
                     .specular(0.2),
             ),
         );
-        let s2 = Shapes::Sphere(Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5)));
+        let s2 = Object::Sphere(Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5)));
 
         let w = World::default();
 
@@ -226,10 +227,10 @@ mod tests {
     #[test]
     fn color_whith_an_intersection_behind_ray() {
         let mut w = World::default();
-        if let Shapes::Sphere(s1) = &mut w.objects[0] {
+        if let Object::Sphere(s1) = &mut w.objects[0] {
             s1.material.ambient = 1.0;
         }
-        if let Shapes::Sphere(s2) = &mut w.objects[1] {
+        if let Object::Sphere(s2) = &mut w.objects[1] {
             s2.material.ambient = 1.0;
             let inner = s2.clone();
             let r = Ray::new(Tuple::point(0.0, 0.0, 0.75), Tuple::vector(0.0, 0.0, -1.0));
@@ -282,8 +283,8 @@ mod tests {
                     .position(0.0, 0.0, -10.0)
                     .intensity(1.0, 1.0, 1.0),
             )
-            .object(Shapes::Sphere(Sphere::default()))
-            .object(Shapes::Sphere(
+            .object(Object::Sphere(Sphere::default()))
+            .object(Object::Sphere(
                 Sphere::default().transform(Transform::translation(0.0, 0.0, 10.0)),
             ));
         let r = Ray::default()

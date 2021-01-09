@@ -46,7 +46,7 @@ fn main() {
         .specular(0.0);
     let floor = Sphere::default()
         .transform(Transform::scaling(10.0, 0.01, 10.0))
-        .material(floor_material);
+        .material(floor_material.clone());
 
     let left_wall = Sphere::default()
         .transform(
@@ -55,7 +55,7 @@ fn main() {
                 .rotate_y(-PI / 4.0)
                 .translate(0.0, 0.0, 5.0),
         )
-        .material(floor_material);
+        .material(floor_material.clone());
 
     let right_wall = Sphere::default()
         .transform(

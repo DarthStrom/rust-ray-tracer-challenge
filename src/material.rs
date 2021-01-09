@@ -2,10 +2,11 @@ use crate::{
     color::Color,
     light::PointLight,
     pattern::StripePattern,
+    shape::Object,
     tuple::{dot, Tuple},
 };
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Material {
     pub color: Color,
     pub ambient: f64,
@@ -38,14 +39,17 @@ impl Material {
 
     pub fn lighting(
         &self,
+        object: &Object,
         light: PointLight,
         point: Tuple,
         eyev: Tuple,
         normalv: Tuple,
         in_shadow: bool,
     ) -> Color {
-        let color = if let Some(pattern) = self.pattern {
-            pattern.stripe_at(point)
+        let color = if let Some(pattern) = &self.pattern {
+            pattern
+                .stripe_at_object(object, point)
+                .unwrap_or(self.color)
         } else {
             self.color
         };
@@ -94,7 +98,8 @@ fn light_behind_surface(light_dot_normal: f64) -> bool {
 mod tests {
     use super::*;
     use crate::{
-        light::PointLight, pattern::StripePattern, test::sqrt_n_over_n, tuple::Tuple, MARGIN,
+        light::PointLight, pattern::StripePattern, shape::sphere::Sphere, test::sqrt_n_over_n,
+        tuple::Tuple, MARGIN,
     };
     use float_cmp::ApproxEq;
 
@@ -115,8 +120,9 @@ mod tests {
         let eyev = Tuple::vector(0.0, 0.0, -1.0);
         let normalv = Tuple::vector(0.0, 0.0, -1.0);
         let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
+        let object = Object::Sphere(Sphere::default());
 
-        let result = m.lighting(light, position, eyev, normalv, false);
+        let result = m.lighting(&object, light, position, eyev, normalv, false);
 
         assert!(result.approx_eq(&Color::new(1.9, 1.9, 1.9), MARGIN));
     }
@@ -127,8 +133,9 @@ mod tests {
         let eyev = Tuple::vector(0.0, sqrt_n_over_n(2), -sqrt_n_over_n(2));
         let normalv = Tuple::vector(0.0, 0.0, -1.0);
         let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
+        let object = Object::Sphere(Sphere::default());
 
-        let result = m.lighting(light, position, eyev, normalv, false);
+        let result = m.lighting(&object, light, position, eyev, normalv, false);
 
         assert!(result.approx_eq(&Color::new(1.0, 1.0, 1.0), MARGIN));
     }
@@ -139,8 +146,9 @@ mod tests {
         let eyev = Tuple::vector(0.0, 0.0, -1.0);
         let normalv = Tuple::vector(0.0, 0.0, -1.0);
         let light = PointLight::new(Tuple::point(0.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
+        let object = Object::Sphere(Sphere::default());
 
-        let result = m.lighting(light, position, eyev, normalv, false);
+        let result = m.lighting(&object, light, position, eyev, normalv, false);
 
         assert!(result.approx_eq(&Color::new(0.7364, 0.7364, 0.7364), MARGIN));
     }
@@ -151,8 +159,9 @@ mod tests {
         let eyev = Tuple::vector(0.0, -sqrt_n_over_n(2), -sqrt_n_over_n(2));
         let normalv = Tuple::vector(0.0, 0.0, -1.0);
         let light = PointLight::new(Tuple::point(0.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
+        let object = Object::Sphere(Sphere::default());
 
-        let result = m.lighting(light, position, eyev, normalv, false);
+        let result = m.lighting(&object, light, position, eyev, normalv, false);
 
         assert!(result.approx_eq(&Color::new(1.6364, 1.6364, 1.6364), MARGIN));
     }
@@ -163,8 +172,9 @@ mod tests {
         let eyev = Tuple::vector(0.0, 0.0, -1.0);
         let normalv = Tuple::vector(0.0, 0.0, -1.0);
         let light = PointLight::new(Tuple::point(0.0, 0.0, 10.0), Color::new(1.0, 1.0, 1.0));
+        let object = Object::Sphere(Sphere::default());
 
-        let result = m.lighting(light, position, eyev, normalv, false);
+        let result = m.lighting(&object, light, position, eyev, normalv, false);
 
         assert!(result.approx_eq(&Color::new(0.1, 0.1, 0.1), MARGIN));
     }
@@ -178,8 +188,9 @@ mod tests {
             .position(0.0, 0.0, -10.0)
             .intensity(1.0, 1.0, 1.0);
         let in_shadow = true;
+        let object = Object::Sphere(Sphere::default());
 
-        let result = m.lighting(light, position, eyev, normalv, in_shadow);
+        let result = m.lighting(&object, light, position, eyev, normalv, in_shadow);
 
         f_assert_eq!(result, &Color::new(0.1, 0.1, 0.1));
     }
@@ -196,9 +207,24 @@ mod tests {
         let light = PointLight::default()
             .position(0.0, 0.0, -10.0)
             .intensity(1.0, 1.0, 1.0);
+        let object = Object::Sphere(Sphere::default());
 
-        let c1 = m.lighting(light, Tuple::point(0.9, 0.0, 0.0), eyev, normalv, false);
-        let c2 = m.lighting(light, Tuple::point(1.1, 0.0, 0.0), eyev, normalv, false);
+        let c1 = m.lighting(
+            &object,
+            light,
+            Tuple::point(0.9, 0.0, 0.0),
+            eyev,
+            normalv,
+            false,
+        );
+        let c2 = m.lighting(
+            &object,
+            light,
+            Tuple::point(1.1, 0.0, 0.0),
+            eyev,
+            normalv,
+            false,
+        );
 
         f_assert_eq!(c1, &Color::white());
         f_assert_eq!(c2, &Color::black());

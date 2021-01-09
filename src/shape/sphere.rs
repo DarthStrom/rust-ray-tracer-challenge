@@ -8,7 +8,7 @@ use crate::{
     tuple::{dot, Tuple},
 };
 
-use super::{Shape, Shapes};
+use super::{Object, Shape};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Sphere {
@@ -52,8 +52,8 @@ impl Shape for Sphere {
         let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
 
         Intersections::new(vec![
-            Intersection::new(t1, Shapes::Sphere(self.clone())),
-            Intersection::new(t2, Shapes::Sphere(self.clone())),
+            Intersection::new(t1, Object::Sphere(self.clone())),
+            Intersection::new(t2, Object::Sphere(self.clone())),
         ])
     }
 
@@ -64,6 +64,10 @@ impl Shape for Sphere {
         let mut world_normal = self.transform.inverse()?.transpose() * object_normal;
         world_normal.w = 0.0;
         Ok(world_normal.normalize())
+    }
+
+    fn transform(&self) -> Transform {
+        self.transform.clone()
     }
 }
 
@@ -104,7 +108,7 @@ mod tests {
             ..Material::default()
         };
 
-        s = s.material(m);
+        s = s.material(m.clone());
         assert_eq!(s.material, m);
     }
 
