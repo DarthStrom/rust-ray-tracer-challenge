@@ -224,11 +224,10 @@ mod tests {
 
     #[test]
     fn shading_an_intersection_from_the_inside() {
-        let mut w = World::default();
-        w.light_sources = vec![PointLight::new(
+        let w = World::default().light_source(PointLight::new(
             Tuple::point(0.0, 0.25, 0.0),
             Color::new(1.0, 1.0, 1.0),
-        )];
+        ));
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
         let shape = w.objects[1].clone();
         let i = Intersection::new(0.5, shape);

@@ -17,7 +17,7 @@ pub struct Plane {
 
 impl Plane {
     fn transform(self, transform: Transform) -> Self {
-        Self { transform, ..self }
+        Self { transform }
     }
 }
 
@@ -31,7 +31,7 @@ impl Shape for Plane {
         }
     }
 
-    fn normal_at(&self, x: f64, y: f64, z: f64) -> Result<Tuple, String> {
+    fn normal_at(&self, _x: f64, _y: f64, _z: f64) -> Result<Tuple, String> {
         Ok(Tuple::vector(0.0, 1.0, 0.0))
     }
 

@@ -1,15 +1,12 @@
-use std::fs;
+#![allow(dead_code)]
 
-use camera::Camera;
 use color::Color;
 use float_cmp::F64Margin;
-use light::PointLight;
+
 use material::Material;
 use matrix::transform::Transform;
 use shape::sphere::Sphere;
 use std::f64::consts::PI;
-use tuple::Tuple;
-use world::World;
 
 pub const MARGIN: F64Margin = F64Margin {
     ulps: 2,
@@ -40,6 +37,7 @@ mod test;
 
 // TODO: make the API more consistent based on this usage
 
+#[allow(unused_variables)]
 fn main() {
     let floor_material = Material::default()
         .color(Color::new(1.0, 0.9, 0.9))
