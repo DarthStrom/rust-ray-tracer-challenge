@@ -1,7 +1,7 @@
 use crate::{
     color::Color,
     light::PointLight,
-    pattern::StripePattern,
+    pattern::Patterns,
     shape::Object,
     tuple::{dot, Tuple},
 };
@@ -13,7 +13,7 @@ pub struct Material {
     pub diffuse: f64,
     pub specular: f64,
     pub shininess: f64,
-    pub pattern: Option<StripePattern>,
+    pub pattern: Option<Patterns>,
 }
 
 impl Material {
@@ -48,7 +48,7 @@ impl Material {
     ) -> Color {
         let color = if let Some(pattern) = &self.pattern {
             pattern
-                .stripe_at_object(object, point)
+                .pattern_at_shape(object, point)
                 .unwrap_or(self.color)
         } else {
             self.color
@@ -98,10 +98,11 @@ fn light_behind_surface(light_dot_normal: f64) -> bool {
 mod tests {
     use super::*;
     use crate::{
-        light::PointLight, pattern::StripePattern, shape::sphere::Sphere, test::sqrt_n_over_n,
-        tuple::Tuple, MARGIN,
+        light::PointLight, pattern::striped, pattern::Patterns, shape::sphere::Sphere,
+        test::sqrt_n_over_n, tuple::Tuple, MARGIN,
     };
     use float_cmp::ApproxEq;
+    use striped::Striped;
 
     #[test]
     fn default() {
@@ -198,7 +199,10 @@ mod tests {
     #[test]
     fn lighting_with_pattern_applied() {
         let (mut m, _) = shared_setup();
-        m.pattern = Some(StripePattern::new(Color::white(), Color::black()));
+        m.pattern = Some(Patterns::Striped(Striped::new(
+            Color::white(),
+            Color::black(),
+        )));
         m.ambient = 1.0;
         m.diffuse = 0.0;
         m.specular = 0.0;

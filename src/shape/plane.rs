@@ -35,7 +35,7 @@ impl Shape for Plane {
         Ok(Tuple::vector(0.0, 1.0, 0.0))
     }
 
-    fn transform(&self) -> Transform {
+    fn get_transform(&self) -> Transform {
         self.transform.clone()
     }
 }

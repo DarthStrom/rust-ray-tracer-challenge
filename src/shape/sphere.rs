@@ -66,7 +66,7 @@ impl Shape for Sphere {
         Ok(world_normal.normalize())
     }
 
-    fn transform(&self) -> Transform {
+    fn get_transform(&self) -> Transform {
         self.transform.clone()
     }
 }

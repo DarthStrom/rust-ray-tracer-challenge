@@ -15,7 +15,7 @@ pub mod sphere;
 pub trait Shape: Debug {
     fn normal_at(&self, x: f64, y: f64, z: f64) -> Result<Tuple, String>;
     fn intersect(&self, ray: Ray) -> Intersections;
-    fn transform(&self) -> Transform;
+    fn get_transform(&self) -> Transform;
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -39,10 +39,10 @@ impl Shape for Object {
         }
     }
 
-    fn transform(&self) -> Transform {
+    fn get_transform(&self) -> Transform {
         match self {
-            Object::Plane(plane) => plane.transform.clone(),
-            Object::Sphere(sphere) => sphere.transform.clone(),
+            Object::Plane(plane) => plane.get_transform(),
+            Object::Sphere(sphere) => sphere.get_transform(),
         }
     }
 }
