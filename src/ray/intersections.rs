@@ -27,6 +27,7 @@ impl Intersection {
         if inside {
             normalv = -normalv;
         }
+        let reflectv = ray.direction.reflect(normalv);
         Ok(Computations {
             t: self.t,
             object: self.object.clone(),
@@ -34,6 +35,7 @@ impl Intersection {
             over_point: point + normalv * MARGIN.epsilon,
             eyev,
             normalv,
+            reflectv,
             inside,
         })
     }
@@ -85,6 +87,7 @@ impl FromIterator<Intersection> for Intersections {
     }
 }
 
+#[derive(Debug)]
 pub struct Computations {
     t: f64,
     pub object: Object,
@@ -92,17 +95,26 @@ pub struct Computations {
     pub over_point: Tuple,
     pub eyev: Tuple,
     pub normalv: Tuple,
+    pub reflectv: Tuple,
     inside: bool,
 }
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::SQRT_2;
+
     use float_cmp::ApproxEq;
     use light::PointLight;
 
     use crate::{
-        color::Color, light, matrix::transform::Transform, ray::Ray, shape::sphere::Sphere,
-        tuple::Tuple, world::World, MARGIN,
+        color::Color,
+        light,
+        matrix::transform::Transform,
+        ray::Ray,
+        shape::{plane::Plane, sphere::Sphere},
+        tuple::Tuple,
+        world::World,
+        MARGIN,
     };
 
     use super::*;
@@ -254,5 +266,21 @@ mod tests {
 
         assert!(comps.over_point.z < -MARGIN.epsilon / 2.0);
         assert!(comps.point.z > comps.over_point.z);
+    }
+
+    #[test]
+    fn precomputing_the_reflection_vector() {
+        let shape = Object::Plane(Plane::default());
+        let r = Ray::default()
+            .origin(0.0, 1.0, -1.0)
+            .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
+        let i = Intersection::new(SQRT_2, shape);
+
+        let comps = i.prepare_computations(r).unwrap();
+
+        f_assert_eq!(
+            comps.reflectv,
+            &Tuple::vector(0.0, SQRT_2 / 2.0, SQRT_2 / 2.0)
+        );
     }
 }

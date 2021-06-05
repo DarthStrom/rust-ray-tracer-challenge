@@ -14,6 +14,7 @@ use crate::{
     tuple::Tuple,
 };
 
+#[derive(Debug)]
 pub struct World {
     pub light_sources: Vec<PointLight>,
     pub objects: Vec<Object>,
@@ -64,6 +65,20 @@ impl World {
         }
     }
 
+    pub fn reflected_color(&self, comps: Computations) -> Color {
+        if comps.object.get_material().reflective == 0.0 {
+            Color::black()
+        } else {
+            let reflect_ray = Ray::new(comps.over_point, comps.reflectv);
+            println!("{:?}", reflect_ray);
+
+            let color = self.color_at(reflect_ray);
+            println!("{:?}", color);
+
+            color * comps.object.get_material().reflective
+        }
+    }
+
     pub fn color_at(&self, ray: Ray) -> Color {
         if let Some(hit) = self.intersect(ray).hit() {
             if let Ok(comps) = hit.prepare_computations(ray) {
@@ -109,16 +124,15 @@ impl World {
     pub fn shade_hit(&self, comps: Computations) -> Color {
         self.light_sources
             .iter()
-            .map(|&light| match &comps.object {
-                Object::Sphere(s) => s.material.lighting(
+            .map(|&light| {
+                comps.object.get_material().lighting(
                     &comps.object,
                     light,
                     comps.point,
                     comps.eyev,
                     comps.normalv,
                     self.is_shadowed(comps.over_point),
-                ),
-                Object::Plane(_) => Color::default(),
+                )
             })
             .fold(Color::default(), |acc, c| acc + c)
     }
@@ -151,11 +165,14 @@ impl Default for World {
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::SQRT_2;
+
     use crate::{
         color::Color,
         material::Material,
         matrix::transform::Transform,
         ray::{intersections::Intersection, Ray},
+        shape::plane::Plane,
         tuple::Tuple,
     };
     use float_cmp::ApproxEq;
@@ -296,5 +313,45 @@ mod tests {
         let c = w.shade_hit(comps);
 
         f_assert_eq!(c, &Color::new(0.1, 0.1, 0.1));
+    }
+
+    #[test]
+    fn the_reflected_color_for_a_nonreflective_material() {
+        let mut w = World::default();
+        let r = Ray::default()
+            .origin(0.0, 0.0, 0.0)
+            .direction(0.0, 0.0, 1.0);
+        if let Object::Sphere(mut shape) = w.objects.pop().unwrap() {
+            shape.material.ambient = 1.0;
+            let i = Intersection::new(1.0, Object::Sphere(shape));
+
+            let comps = i.prepare_computations(r).unwrap();
+            let color = w.reflected_color(comps);
+
+            f_assert_eq!(color, &Color::black());
+        } else {
+            panic!("that was supposed to be a sphere");
+        }
+    }
+
+    #[test]
+    fn the_reflected_color_for_a_reflective_material() {
+        let mut w = World::default();
+        let shape = Object::Plane(
+            Plane::default()
+                .material(Material::default().reflective(0.5))
+                .transform(Transform::translation(0.0, -1.0, 0.0)),
+        );
+        w.objects.push(shape.clone());
+        let r = Ray::default()
+            .origin(0.0, 0.0, -3.0)
+            .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
+        let i = Intersection::new(SQRT_2, shape);
+
+        let comps = i.prepare_computations(r).unwrap();
+        let color = w.reflected_color(comps);
+
+        println!("{:?}", color);
+        f_assert_eq!(color, &Color::new(0.19032, 0.2379, 0.14274));
     }
 }

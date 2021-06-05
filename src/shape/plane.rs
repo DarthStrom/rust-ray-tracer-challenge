@@ -1,4 +1,5 @@
 use crate::{
+    material::Material,
     matrix::transform::Transform,
     ray::{
         intersections::{Intersection, Intersections},
@@ -12,16 +13,29 @@ use super::{Object, Shape};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Plane {
+    pub material: Material,
     pub transform: Transform,
 }
 
 impl Plane {
-    fn transform(self, transform: Transform) -> Self {
-        Self { transform }
+    pub fn material(self, material: Material) -> Self {
+        Self { material, ..self }
+    }
+
+    pub fn transform(self, transform: Transform) -> Self {
+        Self { transform, ..self }
     }
 }
 
 impl Shape for Plane {
+    fn get_material(&self) -> Material {
+        self.material.clone()
+    }
+
+    fn get_transform(&self) -> Transform {
+        self.transform.clone()
+    }
+
     fn intersect(&self, ray: Ray) -> Intersections {
         if ray.direction.y.abs() < MARGIN.epsilon {
             Intersections::new(vec![])
@@ -33,10 +47,6 @@ impl Shape for Plane {
 
     fn normal_at(&self, _x: f64, _y: f64, _z: f64) -> Result<Tuple, String> {
         Ok(Tuple::vector(0.0, 1.0, 0.0))
-    }
-
-    fn get_transform(&self) -> Transform {
-        self.transform.clone()
     }
 }
 

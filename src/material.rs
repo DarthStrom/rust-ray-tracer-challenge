@@ -11,6 +11,7 @@ pub struct Material {
     pub color: Color,
     pub ambient: f64,
     pub diffuse: f64,
+    pub reflective: f64,
     pub specular: f64,
     pub shininess: f64,
     pub pattern: Option<Patterns>,
@@ -27,6 +28,10 @@ impl Material {
 
     pub fn diffuse(self, diffuse: f64) -> Self {
         Self { diffuse, ..self }
+    }
+
+    pub fn reflective(self, reflective: f64) -> Self {
+        Self { reflective, ..self }
     }
 
     pub fn specular(self, specular: f64) -> Self {
@@ -83,6 +88,7 @@ impl Default for Material {
             color: Color::new(1.0, 1.0, 1.0),
             ambient: 0.1,
             diffuse: 0.9,
+            reflective: 0.0,
             specular: 0.9,
             shininess: 200.0,
             pattern: None,
@@ -232,6 +238,13 @@ mod tests {
 
         f_assert_eq!(c1, &Color::white());
         f_assert_eq!(c2, &Color::black());
+    }
+
+    #[test]
+    fn reflectivity_for_the_default_material() {
+        let (m, _) = shared_setup();
+
+        f_assert_eq!(m.reflective, 0.0);
     }
 
     fn shared_setup() -> (Material, Tuple) {

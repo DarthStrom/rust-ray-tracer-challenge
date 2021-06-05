@@ -29,6 +29,14 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
+    fn get_material(&self) -> Material {
+        self.material.clone()
+    }
+
+    fn get_transform(&self) -> Transform {
+        self.transform.clone()
+    }
+
     fn intersect(&self, ray: Ray) -> Intersections {
         let ray = if self.transform.is_invertible() {
             ray.transform(self.transform.inverse().unwrap())
@@ -64,10 +72,6 @@ impl Shape for Sphere {
         let mut world_normal = self.transform.inverse()?.transpose() * object_normal;
         world_normal.w = 0.0;
         Ok(world_normal.normalize())
-    }
-
-    fn get_transform(&self) -> Transform {
-        self.transform.clone()
     }
 }
 
