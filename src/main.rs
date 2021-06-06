@@ -1,7 +1,8 @@
 use bevy::prelude::*;
-use lib::*;
+use tuple::*;
 
-mod lib;
+mod color;
+mod tuple;
 
 #[derive(Clone, Copy)]
 struct Projectile {
