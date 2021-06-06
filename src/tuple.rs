@@ -5,11 +5,11 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 use bevy::math::{Vec3A, Vec4};
 use float_cmp::approx_eq;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Tuple(Vec4);
 
 impl Tuple {
-    fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self(Vec4::new(x, y, z, w))
     }
 
@@ -49,24 +49,29 @@ impl Tuple {
         Self(self.0.normalize())
     }
 
-    fn dot(self, other: Self) -> f32 {
+    pub fn dot(self, other: Self) -> f32 {
         self.0.dot(other.0)
     }
 
-    fn cross(self, other: Self) -> Self {
+    pub fn cross(self, other: Self) -> Self {
         let vec1 = Vec3A::from(self.0);
         let vec2 = Vec3A::from(other.0);
         let cross = vec1.cross(vec2);
         Self(Vec4::new(cross.x, cross.y, cross.z, self.0.w))
     }
+
+    pub fn vec(self) -> Vec4 {
+        self.0
+    }
 }
 
 impl PartialEq for Tuple {
     fn eq(&self, other: &Self) -> bool {
-        approx_eq!(f32, self.0.x, other.0.x)
-            && approx_eq!(f32, self.0.y, other.0.y)
-            && approx_eq!(f32, self.0.z, other.0.z)
-            && approx_eq!(f32, self.0.w, other.0.w)
+        let epsilon = 0.000001;
+        approx_eq!(f32, self.0.x, other.0.x, epsilon = epsilon)
+            && approx_eq!(f32, self.0.y, other.0.y, epsilon = epsilon)
+            && approx_eq!(f32, self.0.z, other.0.z, epsilon = epsilon)
+            && approx_eq!(f32, self.0.w, other.0.w, epsilon = epsilon)
     }
 }
 

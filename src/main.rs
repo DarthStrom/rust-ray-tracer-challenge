@@ -2,6 +2,10 @@
 
 mod canvas;
 mod color;
+mod intersection;
+mod ray;
+mod sphere;
+mod transform;
 mod tuple;
 
 use std::fs;
