@@ -1,29 +1,115 @@
 #![allow(dead_code)]
 
-use bevy::math::Vec4;
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Debug, PartialEq)]
+use bevy::math::{Vec3A, Vec4};
+use float_cmp::{ApproxEq, F32Margin};
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Tuple(Vec4);
 
 impl Tuple {
     fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
-        Tuple(Vec4::new(x, y, z, w))
+        Self(Vec4::new(x, y, z, w))
     }
 
-    fn point(x: f32, y: f32, z: f32) -> Self {
+    pub fn point(x: f32, y: f32, z: f32) -> Self {
         Self::new(x, y, z, 1.0)
     }
 
-    fn vector(x: f32, y: f32, z: f32) -> Self {
+    pub fn vector(x: f32, y: f32, z: f32) -> Self {
         Self::new(x, y, z, 0.0)
     }
 
-    fn is_point(&self) -> bool {
+    fn is_point(self) -> bool {
         self.0.w > 0.0
     }
 
-    fn is_vector(&self) -> bool {
+    fn is_vector(self) -> bool {
         self.0.w == 0.0
+    }
+
+    fn magnitude(self) -> f32 {
+        self.0.length()
+    }
+
+    pub fn x(self) -> f32 {
+        self.0.x
+    }
+
+    pub fn y(self) -> f32 {
+        self.0.y
+    }
+
+    pub fn z(self) -> f32 {
+        self.0.z
+    }
+
+    pub fn normalize(self) -> Self {
+        Self(self.0.normalize())
+    }
+
+    fn dot(self, other: Self) -> f32 {
+        self.0.dot(other.0)
+    }
+
+    fn cross(self, other: Self) -> Self {
+        let vec1 = Vec3A::from(self.0);
+        let vec2 = Vec3A::from(other.0);
+        let cross = vec1.cross(vec2);
+        Self(Vec4::new(cross.x, cross.y, cross.z, self.0.w))
+    }
+}
+
+impl ApproxEq for Tuple {
+    type Margin = F32Margin;
+
+    fn approx_eq<T: Into<Self::Margin>>(self, other: Self, margin: T) -> bool {
+        let margin = margin.into();
+        self.0.x.approx_eq(other.0.x, margin)
+            && self.0.y.approx_eq(other.0.y, margin)
+            && self.0.z.approx_eq(other.0.z, margin)
+            && self.0.w.approx_eq(other.0.w, margin)
+    }
+}
+
+impl Add for Tuple {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Tuple(self.0 + rhs.0)
+    }
+}
+
+impl Sub for Tuple {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Tuple(self.0 - rhs.0)
+    }
+}
+
+impl Neg for Tuple {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Tuple(-self.0)
+    }
+}
+
+impl Mul<f32> for Tuple {
+    type Output = Self;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Tuple(self.0 * rhs)
+    }
+}
+
+impl Div<f32> for Tuple {
+    type Output = Self;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Tuple(self.0 / rhs)
     }
 }
 
@@ -69,5 +155,168 @@ mod tests {
         let p = Tuple::vector(4.0, -4.0, 3.0);
 
         assert_eq!(p, Tuple::new(4.0, -4.0, 3.0, 0.0));
+    }
+
+    #[test]
+    fn adding_two_tuples() {
+        let a1 = Tuple::new(3.0, -2.0, 5.0, 1.0);
+        let a2 = Tuple::new(-2.0, 3.0, 1.0, 0.0);
+
+        assert!(approx_eq!(Tuple, a1 + a2, Tuple::new(1.0, 1.0, 6.0, 1.0)));
+    }
+
+    #[test]
+    fn subtracting_two_points() {
+        let p1 = Tuple::point(3.0, 2.0, 1.0);
+        let p2 = Tuple::point(5.0, 6.0, 7.0);
+
+        assert!(approx_eq!(Tuple, p1 - p2, Tuple::vector(-2.0, -4.0, -6.0)));
+    }
+
+    #[test]
+    fn subtracting_a_vector_from_a_point() {
+        let p = Tuple::point(3.0, 2.0, 1.0);
+        let v = Tuple::vector(5.0, 6.0, 7.0);
+
+        assert!(approx_eq!(Tuple, p - v, Tuple::point(-2.0, -4.0, -6.0)));
+    }
+
+    #[test]
+    fn subtracting_two_vectors() {
+        let v1 = Tuple::vector(3.0, 2.0, 1.0);
+        let v2 = Tuple::vector(5.0, 6.0, 7.0);
+
+        assert!(approx_eq!(Tuple, v1 - v2, Tuple::vector(-2.0, -4.0, -6.0)));
+    }
+
+    #[test]
+    fn subtracting_a_vector_from_the_zero_vector() {
+        let zero = Tuple::vector(0.0, 0.0, 0.0);
+        let v = Tuple::vector(1.0, -2.0, 3.0);
+
+        assert!(approx_eq!(Tuple, zero - v, Tuple::vector(-1.0, 2.0, -3.0)));
+    }
+
+    #[test]
+    fn negating_a_tuple() {
+        let a = Tuple::new(1.0, -2.0, 3.0, -4.0);
+
+        assert!(approx_eq!(Tuple, -a, Tuple::new(-1.0, 2.0, -3.0, 4.0)));
+    }
+
+    #[test]
+    fn multiplying_a_tuple_by_a_scalar() {
+        let a = Tuple::new(1.0, -2.0, 3.0, -4.0);
+
+        assert!(approx_eq!(
+            Tuple,
+            a * 3.5,
+            Tuple::new(3.5, -7.0, 10.5, -14.0)
+        ));
+    }
+
+    #[test]
+    fn multiplying_a_tuple_by_a_fraction() {
+        let a = Tuple::new(1.0, -2.0, 3.0, -4.0);
+
+        assert!(approx_eq!(Tuple, a * 0.5, Tuple::new(0.5, -1.0, 1.5, -2.0)));
+    }
+
+    #[test]
+    fn dividing_a_tuple_by_a_scalar() {
+        let a = Tuple::new(1.0, -2.0, 3.0, -4.0);
+
+        assert!(approx_eq!(Tuple, a / 2.0, Tuple::new(0.5, -1.0, 1.5, -2.0)));
+    }
+
+    #[test]
+    fn computing_the_magnitude_of_vector_1_0_0() {
+        let v = Tuple::vector(1.0, 0.0, 0.0);
+
+        assert!(approx_eq!(f32, v.magnitude(), 1.0));
+    }
+
+    #[test]
+    fn computing_the_magnitude_of_vector_0_1_0() {
+        let v = Tuple::vector(0.0, 1.0, 0.0);
+
+        assert!(approx_eq!(f32, v.magnitude(), 1.0));
+    }
+
+    #[test]
+    fn computing_the_magnitude_of_vector_0_0_1() {
+        let v = Tuple::vector(0.0, 0.0, 1.0);
+
+        assert!(approx_eq!(f32, v.magnitude(), 1.0));
+    }
+
+    #[test]
+    fn computing_the_magnitude_of_vector_1_2_3() {
+        let v = Tuple::vector(1.0, 2.0, 3.0);
+
+        assert!(approx_eq!(f32, v.magnitude(), 14_f32.sqrt()));
+    }
+
+    #[test]
+    fn computing_the_magnitude_of_vector_neg1_neg2_neg3() {
+        let v = Tuple::vector(-1.0, -2.0, -3.0);
+
+        assert!(approx_eq!(f32, v.magnitude(), 14_f32.sqrt()));
+    }
+
+    #[test]
+    fn normalizing_vector_4_0_0_gives_1_0_0() {
+        let v = Tuple::vector(4.0, 0.0, 0.0);
+
+        assert!(approx_eq!(
+            Tuple,
+            v.normalize(),
+            Tuple::vector(1.0, 0.0, 0.0)
+        ));
+    }
+
+    #[test]
+    fn normalizing_vector_1_2_3() {
+        let v = Tuple::vector(1.0, 2.0, 3.0);
+
+        assert!(approx_eq!(
+            Tuple,
+            v.normalize(),
+            Tuple::vector(
+                1.0 / 14_f32.sqrt(),
+                2.0 / 14_f32.sqrt(),
+                3.0 / 14_f32.sqrt()
+            )
+        ));
+    }
+
+    #[test]
+    fn the_magnitude_of_a_normalized_vector() {
+        let v = Tuple::vector(1.0, 2.0, 3.0);
+
+        let norm = v.normalize();
+
+        assert!(approx_eq!(f32, norm.magnitude(), 1.0));
+    }
+
+    #[test]
+    fn the_dot_product_of_two_tuples() {
+        let a = Tuple::vector(1.0, 2.0, 3.0);
+        let b = Tuple::vector(2.0, 3.0, 4.0);
+
+        assert!(approx_eq!(f32, a.dot(b), 20.0));
+    }
+
+    #[test]
+    fn the_cross_product_of_two_vectors() {
+        let a = Tuple::vector(1.0, 2.0, 3.0);
+        let b = Tuple::vector(2.0, 3.0, 4.0);
+
+        assert!(approx_eq!(
+            Tuple,
+            a.cross(b),
+            Tuple::vector(-1.0, 2.0, -1.0)
+        ));
+        assert!(approx_eq!(Tuple, b.cross(a), Tuple::vector(1.0, -2.0, 1.0)));
     }
 }
