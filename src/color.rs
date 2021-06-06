@@ -3,12 +3,27 @@ use std::ops::{Add, Mul, Sub};
 use bevy::{math::Vec4, render::color};
 use float_cmp::approx_eq;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Color(color::Color);
+
+pub const BLACK: Color = Color(color::Color::BLACK);
+pub const WHITE: Color = Color(color::Color::WHITE);
 
 impl Color {
     pub fn new(red: f32, green: f32, blue: f32) -> Self {
         Self(color::Color::rgb(red, green, blue))
+    }
+
+    pub fn red(self) -> f32 {
+        self.0.r()
+    }
+
+    pub fn green(self) -> f32 {
+        self.0.g()
+    }
+
+    pub fn blue(self) -> f32 {
+        self.0.b()
     }
 }
 
