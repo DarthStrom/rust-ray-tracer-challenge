@@ -1,5 +1,7 @@
+use bevy::prelude::*;
+
 mod lib;
 
 fn main() {
-    println!("Hello, world!");
+    App::build().run();
 }
