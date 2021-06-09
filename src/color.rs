@@ -29,9 +29,10 @@ impl Color {
 
 impl PartialEq for Color {
     fn eq(&self, other: &Self) -> bool {
-        approx_eq!(f32, self.0.r(), other.0.r())
-            && approx_eq!(f32, self.0.g(), other.0.g())
-            && approx_eq!(f32, self.0.b(), other.0.b())
+        let epsilon = 0.0001;
+        approx_eq!(f32, self.0.r(), other.0.r(), epsilon = epsilon)
+            && approx_eq!(f32, self.0.g(), other.0.g(), epsilon = epsilon)
+            && approx_eq!(f32, self.0.b(), other.0.b(), epsilon = epsilon)
     }
 }
 
@@ -39,7 +40,11 @@ impl Add for Color {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
+        let self_vec = Vec4::from(self.0);
+        let rhs_vec = Vec4::from(rhs.0);
+        let new_vec = self_vec + rhs_vec;
+
+        Self(color::Color::rgb(new_vec.x, new_vec.y, new_vec.z))
     }
 }
 

@@ -43,11 +43,9 @@ impl Index<usize> for Intersections {
 
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::SQRT_2;
+    use super::*;
 
     use float_cmp::approx_eq;
-
-    use super::*;
 
     #[test]
     fn intersection_encapsulates_t_and_object() {

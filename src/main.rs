@@ -3,10 +3,15 @@
 mod canvas;
 mod color;
 mod intersection;
+mod lights;
+mod materials;
 mod ray;
 mod sphere;
 mod transform;
 mod tuple;
+
+#[cfg(test)]
+mod test;
 
 use std::fs;
 

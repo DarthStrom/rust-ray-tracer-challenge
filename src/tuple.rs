@@ -21,12 +21,24 @@ impl Tuple {
         Self::new(x, y, z, 0.0)
     }
 
-    fn is_point(self) -> bool {
+    pub fn is_point(self) -> bool {
         self.0.w > 0.0
     }
 
-    fn is_vector(self) -> bool {
+    pub fn is_vector(self) -> bool {
         self.0.w == 0.0
+    }
+
+    pub fn to_point(self) -> Self {
+        let mut vector = self.0;
+        vector.w = 1.0;
+        Self(vector)
+    }
+
+    pub fn to_vector(self) -> Self {
+        let mut vector = self.0;
+        vector.w = 0.0;
+        Self(vector)
     }
 
     fn magnitude(self) -> f32 {
@@ -43,6 +55,10 @@ impl Tuple {
 
     pub fn z(self) -> f32 {
         self.0.z
+    }
+
+    pub fn reflect(self, normal: Tuple) -> Self {
+        self - normal * 2.0 * self.dot(normal)
     }
 
     pub fn normalize(self) -> Self {
@@ -67,7 +83,7 @@ impl Tuple {
 
 impl PartialEq for Tuple {
     fn eq(&self, other: &Self) -> bool {
-        let epsilon = 0.000001;
+        let epsilon = 0.00001;
         approx_eq!(f32, self.0.x, other.0.x, epsilon = epsilon)
             && approx_eq!(f32, self.0.y, other.0.y, epsilon = epsilon)
             && approx_eq!(f32, self.0.z, other.0.z, epsilon = epsilon)
@@ -118,6 +134,8 @@ impl Div<f32> for Tuple {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::test::*;
 
     #[test]
     fn tuple_with_w_1_is_a_point() {
@@ -305,5 +323,25 @@ mod tests {
 
         assert_eq!(a.cross(b), Tuple::vector(-1.0, 2.0, -1.0));
         assert_eq!(b.cross(a), Tuple::vector(1.0, -2.0, 1.0));
+    }
+
+    #[test]
+    fn reflecting_a_vector_approacing_at_45_deg() {
+        let v = Tuple::vector(1.0, -1.0, 0.0);
+        let n = Tuple::vector(0.0, 1.0, 0.0);
+
+        let r = v.reflect(n);
+
+        assert_eq!(r, Tuple::vector(1.0, 1.0, 0.0));
+    }
+
+    #[test]
+    fn reflecting_a_vector_off_a_slanted_surface() {
+        let v = Tuple::vector(0.0, -1.0, 0.0);
+        let n = Tuple::vector(sqrt_n_over_n(2), sqrt_n_over_n(2), 0.0);
+
+        let r = v.reflect(n);
+
+        assert_eq!(r, Tuple::vector(1.0, 0.0, 0.0));
     }
 }

@@ -46,6 +46,10 @@ impl Transform {
     pub fn mat(&self) -> Mat4 {
         self.0
     }
+
+    pub fn transpose(&self) -> Self {
+        Self(self.0.transpose())
+    }
 }
 
 impl Mul for Transform {
