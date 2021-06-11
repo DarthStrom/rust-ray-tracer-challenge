@@ -9,6 +9,7 @@ mod ray;
 mod sphere;
 mod transform;
 mod tuple;
+mod world;
 
 #[cfg(test)]
 mod test;

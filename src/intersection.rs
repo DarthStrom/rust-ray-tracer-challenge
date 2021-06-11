@@ -1,6 +1,6 @@
-use std::ops::Index;
+use std::{iter::FromIterator, ops::Index};
 
-use crate::sphere::Sphere;
+use crate::{ray::Ray, sphere::Sphere, tuple::Tuple};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Intersection {
@@ -11,6 +11,27 @@ pub struct Intersection {
 impl Intersection {
     pub fn new(t: f32, object: Sphere) -> Self {
         Self { t, object }
+    }
+
+    pub fn prepare_computations(&self, ray: Ray) -> Computations {
+        let point = ray.position(self.t);
+        let eyev = -ray.direction;
+        let mut normalv = self.object.normal_at(point.x(), point.y(), point.z());
+        let inside = normalv.dot(eyev) < 0.0;
+        if inside {
+            normalv = -normalv;
+        }
+        // let reflectv = ray.direction.reflect(normalv);
+        Computations {
+            t: self.t,
+            object: self.object,
+            point,
+            // over_point: point + normalv * MARGIN.epsilon,
+            eyev,
+            normalv,
+            // reflectv,
+            inside,
+        }
     }
 }
 
@@ -31,6 +52,10 @@ impl Intersections {
     pub fn len(&self) -> usize {
         self.0.len()
     }
+
+    pub fn vec(self) -> Vec<Intersection> {
+        self.0
+    }
 }
 
 impl Index<usize> for Intersections {
@@ -39,6 +64,28 @@ impl Index<usize> for Intersections {
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
     }
+}
+
+impl FromIterator<Intersection> for Intersections {
+    fn from_iter<T: IntoIterator<Item = Intersection>>(iter: T) -> Self {
+        let mut result = Self(vec![]);
+        for i in iter {
+            result.0.push(i);
+        }
+        result
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Computations {
+    t: f32,
+    pub object: Sphere,
+    pub point: Tuple,
+    // pub over_point: Tuple,
+    pub eyev: Tuple,
+    pub normalv: Tuple,
+    // pub reflectv: Tuple,
+    inside: bool,
 }
 
 #[cfg(test)]
@@ -120,35 +167,35 @@ mod tests {
         assert_eq!(i, Some(&i4));
     }
 
-    // #[test]
-    // fn precomputing_the_state_of_an_intersection() {
-    //     let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    //     let shape = Object::Sphere(Sphere::default());
-    //     let i = Intersection::new(4.0, shape);
+    #[test]
+    fn precomputing_the_state_of_an_intersection() {
+        let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
+        let shape = Sphere::default();
+        let i = Intersection::new(4.0, shape);
 
-    //     let comps = i.prepare_computations(r).unwrap();
+        let comps = i.prepare_computations(r);
 
-    //     f_assert_eq!(comps.t, i.t);
-    //     assert_eq!(comps.object, i.object);
-    //     f_assert_eq!(comps.point, &Tuple::point(0.0, 0.0, -1.0));
-    //     f_assert_eq!(comps.eyev, &Tuple::vector(0.0, 0.0, -1.0));
-    //     assert!(!comps.inside);
-    //     f_assert_eq!(comps.normalv, &Tuple::vector(0.0, 0.0, -1.0));
-    // }
+        assert!(approx_eq!(f32, comps.t, i.t));
+        assert_eq!(comps.object, i.object);
+        assert_eq!(comps.point, Tuple::point(0.0, 0.0, -1.0));
+        assert_eq!(comps.eyev, Tuple::vector(0.0, 0.0, -1.0));
+        assert!(!comps.inside);
+        assert_eq!(comps.normalv, Tuple::vector(0.0, 0.0, -1.0));
+    }
 
-    // #[test]
-    // fn the_hit_when_an_intersection_occurs_on_the_inside() {
-    //     let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
-    //     let shape = Object::Sphere(Sphere::default());
-    //     let i = Intersection::new(1.0, shape);
+    #[test]
+    fn the_hit_when_an_intersection_occurs_on_the_inside() {
+        let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
+        let shape = Sphere::default();
+        let i = Intersection::new(1.0, shape);
 
-    //     let comps = i.prepare_computations(r).unwrap();
+        let comps = i.prepare_computations(r);
 
-    //     f_assert_eq!(comps.point, &Tuple::point(0.0, 0.0, 1.0));
-    //     f_assert_eq!(comps.eyev, &Tuple::vector(0.0, 0.0, -1.0));
-    //     assert!(comps.inside);
-    //     f_assert_eq!(comps.normalv, &Tuple::vector(0.0, 0.0, -1.0));
-    // }
+        assert_eq!(comps.point, Tuple::point(0.0, 0.0, 1.0));
+        assert_eq!(comps.eyev, Tuple::vector(0.0, 0.0, -1.0));
+        assert!(comps.inside);
+        assert_eq!(comps.normalv, Tuple::vector(0.0, 0.0, -1.0));
+    }
 
     // #[test]
     // fn shading_an_intersection() {
