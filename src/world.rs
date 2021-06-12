@@ -23,6 +23,30 @@ impl World {
         }
     }
 
+    pub fn light_source(self, light_source: PointLight) -> Self {
+        Self {
+            light_sources: vec![light_source],
+            ..self
+        }
+    }
+
+    pub fn object(self, object: Sphere) -> Self {
+        let mut objects = self.objects;
+        objects.push(object);
+
+        Self { objects, ..self }
+    }
+
+    pub fn objects(self, objects: &[Sphere]) -> Self {
+        let mut existing_objects = self.objects;
+        existing_objects.append(&mut objects.to_vec());
+
+        Self {
+            objects: existing_objects,
+            ..self
+        }
+    }
+
     pub fn color_at(&self, ray: Ray) -> Color {
         if let Some(hit) = self.intersect(ray).hit() {
             let comps = hit.prepare_computations(ray);

@@ -40,6 +40,14 @@ impl Sphere {
         self.material = material
     }
 
+    pub fn transform(self, transform: Transform) -> Self {
+        Self { transform, ..self }
+    }
+
+    pub fn material(self, material: Material) -> Self {
+        Self { material, ..self }
+    }
+
     pub fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple {
         let world_point = Tuple::point(x, y, z);
         let object_point = self.transform.inverse() * world_point;
