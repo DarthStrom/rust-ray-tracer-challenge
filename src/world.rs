@@ -5,7 +5,7 @@ use crate::{
     materials::Material,
     ray::Ray,
     sphere::Sphere,
-    transform::Transform,
+    transformations::Transform,
     tuple::Tuple,
 };
 

@@ -7,7 +7,7 @@ mod lights;
 mod materials;
 mod ray;
 mod sphere;
-mod transform;
+mod transformations;
 mod tuple;
 mod world;
 

@@ -2,7 +2,7 @@ use crate::{
     intersection::{Intersection, Intersections},
     materials::Material,
     ray::Ray,
-    transform::Transform,
+    transformations::Transform,
     tuple::Tuple,
 };
 
@@ -72,7 +72,7 @@ fn discriminant(ray: Ray) -> f32 {
 mod tests {
     use float_cmp::approx_eq;
 
-    use crate::{test::*, transform::IDENTITY};
+    use crate::{test::*, transformations::IDENTITY};
     use std::f32::consts::{FRAC_1_SQRT_2, PI};
 
     use super::*;

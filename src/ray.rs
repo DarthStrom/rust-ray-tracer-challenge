@@ -1,4 +1,4 @@
-use crate::{transform::Transform, tuple::Tuple};
+use crate::{transformations::Transform, tuple::Tuple};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 
