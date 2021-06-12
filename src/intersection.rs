@@ -1,6 +1,6 @@
 use std::{iter::FromIterator, ops::Index};
 
-use crate::{ray::Ray, sphere::Sphere, tuple::Tuple};
+use crate::{ray::Ray, sphere::Sphere, tuple::Tuple, MARGIN};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Intersection {
@@ -26,7 +26,7 @@ impl Intersection {
             t: self.t,
             object: self.object,
             point,
-            // over_point: point + normalv * MARGIN.epsilon,
+            over_point: point + normalv * MARGIN.epsilon,
             eyev,
             normalv,
             // reflectv,
@@ -81,7 +81,7 @@ pub struct Computations {
     t: f32,
     pub object: Sphere,
     pub point: Tuple,
-    // pub over_point: Tuple,
+    pub over_point: Tuple,
     pub eyev: Tuple,
     pub normalv: Tuple,
     // pub reflectv: Tuple,
@@ -90,6 +90,8 @@ pub struct Computations {
 
 #[cfg(test)]
 mod tests {
+    use crate::transformations::Transform;
+
     use super::*;
 
     use float_cmp::approx_eq;
@@ -228,20 +230,19 @@ mod tests {
     //     f_assert_eq!(c, &Color::new(0.90498, 0.90498, 0.90498));
     // }
 
-    // #[test]
-    // fn the_hit_should_offset_the_point() {
-    //     let r = Ray::default()
-    //         .origin(0.0, 0.0, -5.0)
-    //         .direction(0.0, 0.0, 1.0);
-    //     let shape =
-    //         Object::Sphere(Sphere::default().transform(Transform::translation(0.0, 0.0, 1.0)));
-    //     let i = Intersection::new(5.0, shape);
+    #[test]
+    fn the_hit_should_offset_the_point() {
+        let r = Ray::default()
+            .origin(0.0, 0.0, -5.0)
+            .direction(0.0, 0.0, 1.0);
+        let shape = Sphere::default().transform(Transform::translation(0.0, 0.0, 1.0));
+        let i = Intersection::new(5.0, shape);
 
-    //     let comps = i.prepare_computations(r).unwrap();
+        let comps = i.prepare_computations(r);
 
-    //     assert!(comps.over_point.z < -MARGIN.epsilon / 2.0);
-    //     assert!(comps.point.z > comps.over_point.z);
-    // }
+        assert!(comps.over_point.z() < -MARGIN.epsilon / 2.0);
+        assert!(comps.point.z() > comps.over_point.z());
+    }
 
     // #[test]
     // fn precomputing_the_reflection_vector() {

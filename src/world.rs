@@ -67,6 +67,25 @@ impl World {
         Intersections::new(vec)
     }
 
+    pub fn is_shadowed(&self, point: Tuple) -> bool {
+        self.light_sources
+            .iter()
+            .map(|light| light.position - point)
+            .any(|v| {
+                let distance = v.magnitude();
+                let direction = v.normalize();
+
+                let r = Ray::new(point, direction);
+                let intersections = self.intersect(r);
+
+                if let Some(h) = intersections.hit() {
+                    h.t < distance
+                } else {
+                    false
+                }
+            })
+    }
+
     pub fn shade_hit(&self, comps: Computations) -> Color {
         // TODO: try multiple light sources.  It will slow things down though
         comps.object.material.lighting(
@@ -74,7 +93,7 @@ impl World {
             comps.point,
             comps.eyev,
             comps.normalv,
-            false,
+            self.is_shadowed(comps.over_point),
         )
     }
 }
@@ -216,5 +235,58 @@ mod tests {
         let c = new_world.color_at(r);
 
         assert_eq!(c, inner.material.color);
+    }
+
+    #[test]
+    fn no_shadow_when_nothing_is_collinear_with_point_and_light() {
+        let w = World::default();
+        let p = Tuple::point(0.0, 10.0, 0.0);
+
+        assert!(!w.is_shadowed(p));
+    }
+
+    #[test]
+    fn shadow_when_object_between_point_and_light() {
+        let w = World::default();
+        let p = Tuple::point(10.0, -10.0, 10.0);
+
+        assert!(w.is_shadowed(p));
+    }
+
+    #[test]
+    fn no_shadow_when_object_behind_light() {
+        let w = World::default();
+        let p = Tuple::point(-20.0, 20.0, -20.0);
+
+        assert!(!w.is_shadowed(p));
+    }
+
+    #[test]
+    fn no_shadow_when_object_behind_point() {
+        let w = World::default();
+        let p = Tuple::point(-2.0, 2.0, -2.0);
+
+        assert!(!w.is_shadowed(p));
+    }
+
+    #[test]
+    fn shade_hit_is_given_an_intersection_in_shadow() {
+        let w = World::new()
+            .light_source(
+                PointLight::default()
+                    .position(0.0, 0.0, -10.0)
+                    .intensity(1.0, 1.0, 1.0),
+            )
+            .object(Sphere::default())
+            .object(Sphere::default().transform(Transform::translation(0.0, 0.0, 10.0)));
+        let r = Ray::default()
+            .origin(0.0, 0.0, 5.0)
+            .direction(0.0, 0.0, 1.0);
+        let i = Intersection::new(4.0, w.objects[1]);
+
+        let comps = i.prepare_computations(r);
+        let c = w.shade_hit(comps);
+
+        assert_eq!(c, Color::new(0.1, 0.1, 0.1));
     }
 }

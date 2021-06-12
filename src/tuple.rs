@@ -41,7 +41,7 @@ impl Tuple {
         Self(vector)
     }
 
-    fn magnitude(self) -> f32 {
+    pub fn magnitude(self) -> f32 {
         self.0.length()
     }
 

@@ -168,21 +168,20 @@ mod tests {
         assert_eq!(result, Color::new(0.1, 0.1, 0.1));
     }
 
-    // #[test]
-    // fn lighting_with_the_surface_in_shadow() {
-    //     let (m, position) = shared_setup();
-    //     let eyev = Tuple::vector(0.0, 0.0, -1.0);
-    //     let normalv = Tuple::vector(0.0, 0.0, -1.0);
-    //     let light = PointLight::default()
-    //         .position(0.0, 0.0, -10.0)
-    //         .intensity(1.0, 1.0, 1.0);
-    //     let in_shadow = true;
-    //     let object = Object::Sphere(Sphere::default());
+    #[test]
+    fn lighting_with_the_surface_in_shadow() {
+        let (m, position) = shared_setup();
+        let eyev = Tuple::vector(0.0, 0.0, -1.0);
+        let normalv = Tuple::vector(0.0, 0.0, -1.0);
+        let light = PointLight::default()
+            .position(0.0, 0.0, -10.0)
+            .intensity(1.0, 1.0, 1.0);
+        let in_shadow = true;
 
-    //     let result = m.lighting(&object, light, position, eyev, normalv, in_shadow);
+        let result = m.lighting(light, position, eyev, normalv, in_shadow);
 
-    //     f_assert_eq!(result, &Color::new(0.1, 0.1, 0.1));
-    // }
+        assert_eq!(result, Color::new(0.1, 0.1, 0.1));
+    }
 
     // #[test]
     // fn lighting_with_pattern_applied() {

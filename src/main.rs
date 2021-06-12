@@ -19,12 +19,18 @@ use std::{f32::consts::PI, fs};
 
 use camera::Camera;
 use color::Color;
+use float_cmp::F32Margin;
 use lights::PointLight;
 use materials::Material;
 use sphere::Sphere;
 use transformations::Transform;
 use tuple::*;
 use world::World;
+
+pub const MARGIN: F32Margin = F32Margin {
+    ulps: 2,
+    epsilon: 0.001,
+};
 
 #[derive(Clone, Copy)]
 struct Projectile {
