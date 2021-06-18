@@ -4,6 +4,7 @@ use crate::{
     lights::PointLight,
     materials::Material,
     ray::Ray,
+    shapes::Shape,
     sphere::Sphere,
     transformations::Transform,
     tuple::Tuple,
@@ -100,15 +101,13 @@ impl World {
 
 impl Default for World {
     fn default() -> Self {
-        let mut sphere1 = Sphere::default();
-        sphere1.set_material(
+        let sphere1 = Sphere::default().material(
             Material::default()
                 .color(Color::new(0.8, 1.0, 0.6))
                 .diffuse(0.7)
                 .specular(0.2),
         );
-        let mut sphere2 = Sphere::default();
-        sphere2.set_transform(Transform::scaling(0.5, 0.5, 0.5));
+        let sphere2 = Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5));
         Self {
             light_sources: vec![PointLight::new(
                 Tuple::point(-10.0, 10.0, -10.0),
@@ -123,6 +122,8 @@ impl Default for World {
 mod tests {
     use float_cmp::approx_eq;
 
+    use crate::shapes::Shape;
+
     use super::*;
 
     #[test]
@@ -136,15 +137,13 @@ mod tests {
     #[test]
     fn default_world() {
         let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
-        let mut s1 = Sphere::default();
-        s1.set_material(
+        let s1 = Sphere::default().material(
             Material::default()
                 .color(Color::new(0.8, 1.0, 0.6))
                 .diffuse(0.7)
                 .specular(0.2),
         );
-        let mut s2 = Sphere::default();
-        s2.set_transform(Transform::scaling(0.5, 0.5, 0.5));
+        let s2 = Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5));
 
         let w = World::default();
 

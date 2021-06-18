@@ -2,6 +2,7 @@ use crate::{
     intersection::{Intersection, Intersections},
     materials::Material,
     ray::Ray,
+    shapes::Shape,
     transformations::Transform,
     tuple::Tuple,
 };
@@ -14,8 +15,16 @@ pub struct Sphere {
     pub material: Material,
 }
 
-impl Sphere {
-    pub fn intersect(self, ray: Ray) -> Intersections {
+impl Shape for Sphere {
+    fn transform(self, transform: Transform) -> Self {
+        Self { transform, ..self }
+    }
+
+    fn material(self, material: Material) -> Self {
+        Self { material, ..self }
+    }
+
+    fn intersect(&self, ray: Ray) -> Intersections {
         let ray = ray.transform(self.transform.inverse());
         let discriminant = discriminant(ray);
 
@@ -26,29 +35,13 @@ impl Sphere {
             let b = b(ray);
             let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
             let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
-            let i1 = Intersection::new(t1, self);
-            let i2 = Intersection::new(t2, self);
+            let i1 = Intersection::new(t1, *self);
+            let i2 = Intersection::new(t2, *self);
             Intersections::new(vec![i1, i2])
         }
     }
 
-    pub fn set_transform(&mut self, transform: Transform) {
-        self.transform = transform
-    }
-
-    pub fn set_material(&mut self, material: Material) {
-        self.material = material
-    }
-
-    pub fn transform(self, transform: Transform) -> Self {
-        Self { transform, ..self }
-    }
-
-    pub fn material(self, material: Material) -> Self {
-        Self { material, ..self }
-    }
-
-    pub fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple {
+    fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple {
         let world_point = Tuple::point(x, y, z);
         let object_point = self.transform.inverse() * world_point;
         let object_normal = object_point - Tuple::point(0.0, 0.0, 0.0);
@@ -94,13 +87,12 @@ mod tests {
 
     #[test]
     fn changing_material() {
-        let mut s = Sphere::default();
         let m = Material {
             ambient: 1.0,
             ..Material::default()
         };
+        let s = Sphere::default().material(m);
 
-        s.set_material(m);
         assert_eq!(s.material, m);
     }
 
@@ -170,10 +162,8 @@ mod tests {
 
     #[test]
     fn changin_a_spheres_transformation() {
-        let mut s = Sphere::default();
         let t = Transform::translation(2.0, 3.0, 4.0);
-
-        s.set_transform(t);
+        let s = Sphere::default().transform(t);
 
         assert_eq!(s.transform, t);
     }
@@ -181,9 +171,8 @@ mod tests {
     #[test]
     fn intersecting_a_scaled_sphere_with_a_ray() {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-        let mut s = Sphere::default();
 
-        s.set_transform(Transform::scaling(2.0, 2.0, 2.0));
+        let s = Sphere::default().transform(Transform::scaling(2.0, 2.0, 2.0));
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
@@ -241,8 +230,7 @@ mod tests {
 
     #[test]
     fn normal_on_a_translated_sphere() {
-        let mut s = Sphere::default();
-        s.set_transform(Transform::translation(0.0, 1.0, 0.0));
+        let s = Sphere::default().transform(Transform::translation(0.0, 1.0, 0.0));
 
         let n = s.normal_at(0.0, 1.0 + FRAC_1_SQRT_2, -FRAC_1_SQRT_2);
 
@@ -254,8 +242,7 @@ mod tests {
     #[test]
     fn normal_on_a_transformed_sphere() {
         let m = Transform::scaling(1.0, 0.5, 1.0) * Transform::rotation_z(PI / 5.0);
-        let mut s = Sphere::default();
-        s.set_transform(m);
+        let s = Sphere::default().transform(m);
 
         let n = s.normal_at(0.0, sqrt_n_over_n(2), -sqrt_n_over_n(2));
 

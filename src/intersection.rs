@@ -1,6 +1,6 @@
 use std::{iter::FromIterator, ops::Index};
 
-use crate::{ray::Ray, sphere::Sphere, tuple::Tuple, MARGIN};
+use crate::{ray::Ray, shapes::Shape, sphere::Sphere, tuple::Tuple, MARGIN};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Intersection {
@@ -90,7 +90,7 @@ pub struct Computations {
 
 #[cfg(test)]
 mod tests {
-    use crate::transformations::Transform;
+    use crate::{shapes::Shape, transformations::Transform};
 
     use super::*;
 
