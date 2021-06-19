@@ -8,7 +8,7 @@ use crate::{
     MARGIN,
 };
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Plane {
     material: Material,
     transform: Transform,
@@ -25,12 +25,28 @@ impl ShapeBuilder for Plane {
 }
 
 impl Shape for Plane {
-    fn material(&self) -> Material {
-        self.material
+    fn box_clone(&self) -> crate::shapes::BoxShape {
+        Box::new((*self).clone())
     }
 
-    fn transform(&self) -> Transform {
-        self.transform
+    fn box_eq(&self, other: &dyn std::any::Any) -> bool {
+        other.downcast_ref::<Self>().map_or(false, |a| self == a)
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn material(&self) -> &Material {
+        &self.material
+    }
+
+    fn transform(&self) -> &Transform {
+        &self.transform
+    }
+
+    fn normal_at(&self, _x: f32, _y: f32, _z: f32) -> Tuple {
+        Tuple::vector(0.0, 1.0, 0.0)
     }
 
     fn intersect(&self, ray: Ray) -> Intersections {
@@ -40,10 +56,6 @@ impl Shape for Plane {
             let t = -ray.origin.y() / ray.direction.y();
             Intersections::new(vec![Intersection::new(t, self)])
         }
-    }
-
-    fn normal_at(&self, _x: f32, _y: f32, _z: f32) -> Tuple {
-        Tuple::vector(0.0, 1.0, 0.0)
     }
 }
 

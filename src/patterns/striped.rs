@@ -1,9 +1,13 @@
+use std::any::Any;
+
 use crate::{
     color::{self, Color},
     shapes::Shape,
     transformations::Transform,
     tuple::Tuple,
 };
+
+use super::{BoxPattern, Pattern, PatternBuilder};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Striped {
@@ -20,24 +24,11 @@ impl Striped {
             transform: Transform::default(),
         }
     }
+}
 
-    pub fn with_transform(self, transform: Transform) -> Self {
+impl PatternBuilder for Striped {
+    fn with_transform(self, transform: Transform) -> Self {
         Self { transform, ..self }
-    }
-
-    pub fn pattern_at(&self, point: Tuple) -> Color {
-        if ((point.x() % 2.0) + 2.0) % 2.0 < 1.0 {
-            self.a
-        } else {
-            self.b
-        }
-    }
-
-    pub fn pattern_at_object(&self, object: &dyn Shape, world_point: Tuple) -> Color {
-        let object_point = object.transform().inverse() * world_point;
-        let pattern_point = self.transform.inverse() * object_point;
-
-        self.pattern_at(pattern_point)
     }
 }
 
@@ -51,9 +42,42 @@ impl Default for Striped {
     }
 }
 
+impl Pattern for Striped {
+    fn box_clone(&self) -> BoxPattern {
+        Box::new(*self)
+    }
+
+    fn box_eq(&self, other: &dyn Any) -> bool {
+        other.downcast_ref::<Self>().map_or(false, |a| self == a)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn pattern_at(&self, point: Tuple) -> Color {
+        if ((point.x() % 2.0) + 2.0) % 2.0 < 1.0 {
+            self.a
+        } else {
+            self.b
+        }
+    }
+
+    fn pattern_at_object(&self, object: &dyn Shape, world_point: Tuple) -> Color {
+        let object_point = object.transform().inverse() * world_point;
+        let pattern_point = self.transform.inverse() * object_point;
+
+        self.pattern_at(pattern_point)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{color, shapes::ShapeBuilder, sphere::Sphere, transformations::Transform};
+    use crate::{
+        color,
+        shapes::{sphere::Sphere, ShapeBuilder},
+        transformations::Transform,
+    };
 
     use super::*;
 

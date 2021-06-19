@@ -1,11 +1,11 @@
 use crate::{
     color::{self, Color},
     lights::PointLight,
-    patterns::Striped,
+    patterns::BoxPattern,
     tuple::Tuple,
 };
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Material {
     pub color: Color,
     pub ambient: f32,
@@ -13,7 +13,7 @@ pub struct Material {
     pub reflective: f32,
     pub specular: f32,
     pub shininess: f32,
-    pub pattern: Option<Striped>,
+    pub pattern: Option<BoxPattern>,
 }
 
 impl Material {
@@ -41,7 +41,7 @@ impl Material {
         Self { shininess, ..self }
     }
 
-    pub fn pattern(self, pattern: Striped) -> Self {
+    pub fn pattern(self, pattern: BoxPattern) -> Self {
         Self {
             pattern: Some(pattern),
             ..self
@@ -56,7 +56,7 @@ impl Material {
         normalv: Tuple,
         in_shadow: bool,
     ) -> Color {
-        let color = if let Some(pattern) = self.pattern {
+        let color = if let Some(pattern) = &self.pattern {
             pattern.pattern_at(point)
         } else {
             self.color
@@ -105,7 +105,7 @@ fn light_behind_surface(light_dot_normal: f32) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::{patterns::Striped, test::*};
+    use crate::{patterns::striped::Striped, test::*};
 
     use super::*;
 
@@ -200,7 +200,7 @@ mod tests {
     #[test]
     fn lighting_with_pattern_applied() {
         let (mut m, _) = shared_setup();
-        m.pattern = Some(Striped::new(color::WHITE, color::BLACK));
+        m.pattern = Some(Box::new(Striped::new(color::WHITE, color::BLACK)));
         m.ambient = 1.0;
         m.diffuse = 0.0;
         m.specular = 0.0;

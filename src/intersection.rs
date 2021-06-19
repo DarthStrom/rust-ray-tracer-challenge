@@ -90,7 +90,7 @@ pub struct Computations<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{shapes::ShapeBuilder, sphere::Sphere, transformations::Transform};
+    use crate::{shapes::sphere::Sphere, shapes::ShapeBuilder, transformations::Transform};
 
     use super::*;
 

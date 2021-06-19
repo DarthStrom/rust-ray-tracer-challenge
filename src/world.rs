@@ -4,8 +4,7 @@ use crate::{
     lights::PointLight,
     materials::Material,
     ray::Ray,
-    shapes::{Shape, ShapeBuilder},
-    sphere::Sphere,
+    shapes::{sphere::Sphere, Shape, ShapeBuilder},
     transformations::Transform,
     tuple::Tuple,
 };
@@ -228,7 +227,7 @@ mod tests {
                 Color::new(1.0, 1.0, 1.0),
             ))
             .object(Box::new(outer))
-            .object(Box::new(inner));
+            .object(Box::new(inner.clone()));
 
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.75), Tuple::vector(0.0, 0.0, -1.0));
 

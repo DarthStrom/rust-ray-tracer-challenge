@@ -2,12 +2,12 @@ use crate::{
     intersection::{Intersection, Intersections},
     materials::Material,
     ray::Ray,
-    shapes::{ShapeBuilder, Shape},
+    shapes::{Shape, ShapeBuilder},
     transformations::Transform,
     tuple::Tuple,
 };
 
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Sphere {
     pub center: Tuple,
     pub radius: f32,
@@ -26,12 +26,33 @@ impl ShapeBuilder for Sphere {
 }
 
 impl Shape for Sphere {
-    fn material(&self) -> Material {
-        self.material
+    fn box_clone(&self) -> crate::shapes::BoxShape {
+        Box::new((*self).clone())
     }
 
-    fn transform(&self) -> Transform {
-        self.transform
+    fn box_eq(&self, other: &dyn std::any::Any) -> bool {
+        other.downcast_ref::<Self>().map_or(false, |a| self == a)
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn material(&self) -> &Material {
+        &self.material
+    }
+
+    fn transform(&self) -> &Transform {
+        &self.transform
+    }
+
+    fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple {
+        let world_point = Tuple::point(x, y, z);
+        let object_point = self.transform.inverse() * world_point;
+        let object_normal = object_point - Tuple::point(0.0, 0.0, 0.0);
+        let mut world_normal = self.transform.inverse().transpose() * object_normal;
+        world_normal = world_normal.to_vector();
+        world_normal.normalize()
     }
 
     fn intersect(&self, ray: Ray) -> Intersections {
@@ -49,15 +70,6 @@ impl Shape for Sphere {
             let i2 = Intersection::new(t2, self);
             Intersections::new(vec![i1, i2])
         }
-    }
-
-    fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple {
-        let world_point = Tuple::point(x, y, z);
-        let object_point = self.transform.inverse() * world_point;
-        let object_normal = object_point - Tuple::point(0.0, 0.0, 0.0);
-        let mut world_normal = self.transform.inverse().transpose() * object_normal;
-        world_normal = world_normal.to_vector();
-        world_normal.normalize()
     }
 }
 
@@ -101,7 +113,7 @@ mod tests {
             ambient: 1.0,
             ..Material::default()
         };
-        let s = Sphere::default().with_material(m);
+        let s = Sphere::default().with_material(m.clone());
 
         assert_eq!(s.material, m);
     }
