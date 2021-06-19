@@ -1,3 +1,4 @@
+pub mod checkered;
 pub mod gradient;
 pub mod ring;
 pub mod striped;
