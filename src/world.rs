@@ -4,16 +4,16 @@ use crate::{
     lights::PointLight,
     materials::Material,
     ray::Ray,
-    shapes::Shape,
+    shapes::{Shape, ShapeBuilder},
     sphere::Sphere,
     transformations::Transform,
     tuple::Tuple,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct World {
     light_sources: Vec<PointLight>,
-    objects: Vec<Sphere>,
+    objects: Vec<Box<dyn Shape>>,
 }
 
 impl World {
@@ -31,21 +31,11 @@ impl World {
         }
     }
 
-    pub fn object(self, object: Sphere) -> Self {
+    pub fn object(self, object: Box<dyn Shape>) -> Self {
         let mut objects = self.objects;
         objects.push(object);
 
         Self { objects, ..self }
-    }
-
-    pub fn objects(self, objects: &[Sphere]) -> Self {
-        let mut existing_objects = self.objects;
-        existing_objects.append(&mut objects.to_vec());
-
-        Self {
-            objects: existing_objects,
-            ..self
-        }
     }
 
     pub fn color_at(&self, ray: Ray) -> Color {
@@ -89,7 +79,7 @@ impl World {
 
     pub fn shade_hit(&self, comps: Computations) -> Color {
         // TODO: try multiple light sources.  It will slow things down though
-        comps.object.material.lighting(
+        comps.object.material().lighting(
             self.light_sources[0],
             comps.point,
             comps.eyev,
@@ -101,19 +91,19 @@ impl World {
 
 impl Default for World {
     fn default() -> Self {
-        let sphere1 = Sphere::default().material(
+        let sphere1 = Sphere::default().with_material(
             Material::default()
                 .color(Color::new(0.8, 1.0, 0.6))
                 .diffuse(0.7)
                 .specular(0.2),
         );
-        let sphere2 = Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5));
+        let sphere2 = Sphere::default().with_transform(Transform::scaling(0.5, 0.5, 0.5));
         Self {
             light_sources: vec![PointLight::new(
                 Tuple::point(-10.0, 10.0, -10.0),
                 Color::new(1.0, 1.0, 1.0),
             )],
-            objects: vec![sphere1, sphere2],
+            objects: vec![Box::new(sphere1), Box::new(sphere2)],
         }
     }
 }
@@ -122,7 +112,7 @@ impl Default for World {
 mod tests {
     use float_cmp::approx_eq;
 
-    use crate::shapes::Shape;
+    use crate::shapes::ShapeBuilder;
 
     use super::*;
 
@@ -137,19 +127,21 @@ mod tests {
     #[test]
     fn default_world() {
         let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
-        let s1 = Sphere::default().material(
+        let s1 = Sphere::default().with_material(
             Material::default()
                 .color(Color::new(0.8, 1.0, 0.6))
                 .diffuse(0.7)
                 .specular(0.2),
         );
-        let s2 = Sphere::default().transform(Transform::scaling(0.5, 0.5, 0.5));
+        let s2 = Sphere::default().with_transform(Transform::scaling(0.5, 0.5, 0.5));
 
         let w = World::default();
 
         assert_eq!(w.light_sources, vec![light]);
-        assert_eq!(w.objects[0], s1);
-        assert_eq!(w.objects[1], s2);
+        assert_eq!(w.objects[0].material(), s1.material());
+        assert_eq!(w.objects[1].material(), s2.material());
+        assert_eq!(w.objects[0].transform(), s1.transform());
+        assert_eq!(w.objects[1].transform(), s2.transform());
     }
 
     #[test]
@@ -170,7 +162,7 @@ mod tests {
     fn shading_an_intersection() {
         let w = World::default();
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-        let shape = w.objects[0];
+        let shape = w.objects[0].as_ref();
         let i = Intersection::new(4.0, shape);
 
         let comps = i.prepare_computations(r);
@@ -189,7 +181,7 @@ mod tests {
             ..World::default()
         };
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
-        let shape = w.objects[1];
+        let shape = w.objects[1].as_ref();
         let i = Intersection::new(0.5, shape);
 
         let comps = i.prepare_computations(r);
@@ -219,19 +211,28 @@ mod tests {
     }
 
     #[test]
-    fn color_whith_an_intersection_behind_ray() {
-        let w = World::default();
-        let mut outer = w.objects[0];
-        outer.material.ambient = 1.0;
-        let mut inner = w.objects[1];
-        inner.material.ambient = 1.0;
-        let new_world = World {
-            objects: vec![outer, inner],
-            ..World::default()
-        };
+    fn color_with_an_intersection_behind_ray() {
+        let outer = Sphere::default().with_material(
+            Material::default()
+                .color(Color::new(0.8, 1.0, 0.6))
+                .diffuse(0.7)
+                .specular(0.2)
+                .ambient(1.0),
+        );
+        let inner = Sphere::default()
+            .with_transform(Transform::scaling(0.5, 0.5, 0.5))
+            .with_material(Material::default().ambient(1.0));
+        let w = World::new()
+            .light_source(PointLight::new(
+                Tuple::point(-10.0, 10.0, -10.0),
+                Color::new(1.0, 1.0, 1.0),
+            ))
+            .object(Box::new(outer))
+            .object(Box::new(inner));
+
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.75), Tuple::vector(0.0, 0.0, -1.0));
 
-        let c = new_world.color_at(r);
+        let c = w.color_at(r);
 
         assert_eq!(c, inner.material.color);
     }
@@ -276,12 +277,14 @@ mod tests {
                     .position(0.0, 0.0, -10.0)
                     .intensity(1.0, 1.0, 1.0),
             )
-            .object(Sphere::default())
-            .object(Sphere::default().transform(Transform::translation(0.0, 0.0, 10.0)));
+            .object(Box::new(Sphere::default()))
+            .object(Box::new(
+                Sphere::default().with_transform(Transform::translation(0.0, 0.0, 10.0)),
+            ));
         let r = Ray::default()
             .origin(0.0, 0.0, 5.0)
             .direction(0.0, 0.0, 1.0);
-        let i = Intersection::new(4.0, w.objects[1]);
+        let i = Intersection::new(4.0, w.objects[1].as_ref());
 
         let comps = i.prepare_computations(r);
         let c = w.shade_hit(comps);

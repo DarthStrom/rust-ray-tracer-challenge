@@ -1,11 +1,18 @@
+use std::fmt::Debug;
+
 use crate::{
     intersection::Intersections, materials::Material, ray::Ray, transformations::Transform,
     tuple::Tuple,
 };
 
-pub trait Shape: Copy + Clone + Default {
-    fn material(self, material: Material) -> Self;
-    fn transform(self, transform: Transform) -> Self;
+pub trait ShapeBuilder {
+    fn with_material(self, material: Material) -> Self;
+    fn with_transform(self, transform: Transform) -> Self;
+}
+
+pub trait Shape: Debug {
+    fn material(&self) -> Material;
+    fn transform(&self) -> Transform;
     fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple;
     fn intersect(&self, ray: Ray) -> Intersections;
 }

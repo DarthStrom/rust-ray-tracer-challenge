@@ -1,15 +1,15 @@
 use std::{iter::FromIterator, ops::Index};
 
-use crate::{ray::Ray, shapes::Shape, sphere::Sphere, tuple::Tuple, MARGIN};
+use crate::{ray::Ray, shapes::Shape, tuple::Tuple, MARGIN};
 
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub struct Intersection {
+#[derive(Copy, Clone, Debug)]
+pub struct Intersection<'a> {
     pub t: f32,
-    pub object: Sphere,
+    object: &'a dyn Shape,
 }
 
-impl Intersection {
-    pub fn new(t: f32, object: Sphere) -> Self {
+impl<'a> Intersection<'a> {
+    pub fn new(t: f32, object: &'a dyn Shape) -> Self {
         Self { t, object }
     }
 
@@ -35,10 +35,10 @@ impl Intersection {
     }
 }
 
-pub struct Intersections(Vec<Intersection>);
+pub struct Intersections<'a>(Vec<Intersection<'a>>);
 
-impl Intersections {
-    pub fn new(vec: Vec<Intersection>) -> Self {
+impl<'a> Intersections<'a> {
+    pub fn new(vec: Vec<Intersection<'a>>) -> Self {
         Self(vec)
     }
 
@@ -53,21 +53,21 @@ impl Intersections {
         self.0.len()
     }
 
-    pub fn vec(self) -> Vec<Intersection> {
+    pub fn vec(self) -> Vec<Intersection<'a>> {
         self.0
     }
 }
 
-impl Index<usize> for Intersections {
-    type Output = Intersection;
+impl<'a> Index<usize> for Intersections<'a> {
+    type Output = Intersection<'a>;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
     }
 }
 
-impl FromIterator<Intersection> for Intersections {
-    fn from_iter<T: IntoIterator<Item = Intersection>>(iter: T) -> Self {
+impl<'a> FromIterator<Intersection<'a>> for Intersections<'a> {
+    fn from_iter<T: IntoIterator<Item = Intersection<'a>>>(iter: T) -> Self {
         let mut result = Self(vec![]);
         for i in iter {
             result.0.push(i);
@@ -77,9 +77,9 @@ impl FromIterator<Intersection> for Intersections {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Computations {
+pub struct Computations<'a> {
     t: f32,
-    pub object: Sphere,
+    pub object: &'a dyn Shape,
     pub point: Tuple,
     pub over_point: Tuple,
     pub eyev: Tuple,
@@ -90,27 +90,17 @@ pub struct Computations {
 
 #[cfg(test)]
 mod tests {
-    use crate::{shapes::Shape, transformations::Transform};
+    use crate::{shapes::ShapeBuilder, sphere::Sphere, transformations::Transform};
 
     use super::*;
 
     use float_cmp::approx_eq;
 
     #[test]
-    fn intersection_encapsulates_t_and_object() {
-        let s = Sphere::default();
-
-        let i = Intersection::new(3.5, s);
-
-        assert!(approx_eq!(f32, i.t, 3.5));
-        assert_eq!(i.object, s);
-    }
-
-    #[test]
     fn aggregating_intersections() {
         let s = Sphere::default();
-        let i1 = Intersection::new(1.0, s);
-        let i2 = Intersection::new(2.0, s);
+        let i1 = Intersection::new(1.0, &s);
+        let i2 = Intersection::new(2.0, &s);
 
         let xs = vec![i1, i2];
 
@@ -122,63 +112,62 @@ mod tests {
     #[test]
     fn the_hit_when_all_intersections_have_positive_t() {
         let s = Sphere::default();
-        let i1 = Intersection::new(1.0, s);
-        let i2 = Intersection::new(2.0, s);
+        let i1 = Intersection::new(1.0, &s);
+        let i2 = Intersection::new(2.0, &s);
         let xs = Intersections::new(vec![i2, i1]);
 
         let i = xs.hit();
 
-        assert_eq!(i, Some(&i1));
+        assert!(approx_eq!(f32, i.unwrap().t, i1.t));
     }
 
     #[test]
     fn the_hit_when_some_intersections_have_negative_t() {
         let s = Sphere::default();
-        let i1 = Intersection::new(-1.0, s);
-        let i2 = Intersection::new(1.0, s);
+        let i1 = Intersection::new(-1.0, &s);
+        let i2 = Intersection::new(1.0, &s);
         let xs = Intersections::new(vec![i2, i1]);
 
         let i = xs.hit();
 
-        assert_eq!(i, Some(&i2));
+        assert!(approx_eq!(f32, i.unwrap().t, i2.t));
     }
 
     #[test]
     fn the_hit_when_all_intersections_have_negative_t() {
         let s = Sphere::default();
-        let i1 = Intersection::new(-2.0, s);
-        let i2 = Intersection::new(-1.0, s);
+        let i1 = Intersection::new(-2.0, &s);
+        let i2 = Intersection::new(-1.0, &s);
         let xs = Intersections::new(vec![i2, i1]);
 
         let i = xs.hit();
 
-        assert_eq!(i, None);
+        assert!(i.is_none());
     }
 
     #[test]
     fn the_hit_is_always_the_lowest_nonnegative_intersection() {
         let s = Sphere::default();
-        let i1 = Intersection::new(5.0, s);
-        let i2 = Intersection::new(7.0, s);
-        let i3 = Intersection::new(-3.0, s);
-        let i4 = Intersection::new(2.0, s);
+        let i1 = Intersection::new(5.0, &s);
+        let i2 = Intersection::new(7.0, &s);
+        let i3 = Intersection::new(-3.0, &s);
+        let i4 = Intersection::new(2.0, &s);
         let xs = Intersections::new(vec![i1, i2, i3, i4]);
 
         let i = xs.hit();
 
-        assert_eq!(i, Some(&i4));
+        assert!(approx_eq!(f32, i.unwrap().t, i4.t));
     }
 
     #[test]
     fn precomputing_the_state_of_an_intersection() {
         let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
         let shape = Sphere::default();
-        let i = Intersection::new(4.0, shape);
+        let i = Intersection::new(4.0, &shape);
 
         let comps = i.prepare_computations(r);
 
         assert!(approx_eq!(f32, comps.t, i.t));
-        assert_eq!(comps.object, i.object);
         assert_eq!(comps.point, Tuple::point(0.0, 0.0, -1.0));
         assert_eq!(comps.eyev, Tuple::vector(0.0, 0.0, -1.0));
         assert!(!comps.inside);
@@ -189,7 +178,7 @@ mod tests {
     fn the_hit_when_an_intersection_occurs_on_the_inside() {
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
         let shape = Sphere::default();
-        let i = Intersection::new(1.0, shape);
+        let i = Intersection::new(1.0, &shape);
 
         let comps = i.prepare_computations(r);
 
@@ -235,8 +224,8 @@ mod tests {
         let r = Ray::default()
             .origin(0.0, 0.0, -5.0)
             .direction(0.0, 0.0, 1.0);
-        let shape = Sphere::default().transform(Transform::translation(0.0, 0.0, 1.0));
-        let i = Intersection::new(5.0, shape);
+        let shape = Sphere::default().with_transform(Transform::translation(0.0, 0.0, 1.0));
+        let i = Intersection::new(5.0, &shape);
 
         let comps = i.prepare_computations(r);
 
