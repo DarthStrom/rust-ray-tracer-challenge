@@ -1,4 +1,5 @@
 pub mod gradient;
+pub mod ring;
 pub mod striped;
 
 use std::{any::Any, fmt::Debug};
