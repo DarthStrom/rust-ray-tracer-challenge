@@ -1,8 +1,9 @@
+pub mod gradient;
 pub mod striped;
 
 use std::{any::Any, fmt::Debug};
 
-use crate::{color::Color, shapes::Shape, transformations::Transform, tuple::Tuple};
+use crate::{color::Color, transformations::Transform, tuple::Tuple};
 
 pub trait PatternBuilder {
     fn with_transform(self, transform: Transform) -> Self;
@@ -13,7 +14,6 @@ pub trait Pattern: Any + Debug {
     fn box_eq(&self, other: &dyn Any) -> bool;
     fn as_any(&self) -> &dyn Any;
     fn pattern_at(&self, point: Tuple) -> Color;
-    fn pattern_at_object(&self, object: &dyn Shape, world_point: Tuple) -> Color;
 }
 
 pub type BoxPattern = Box<dyn Pattern>;
