@@ -6,6 +6,7 @@ mod color;
 mod intersection;
 mod lights;
 mod materials;
+mod patterns;
 mod planes;
 mod ray;
 mod shapes;
