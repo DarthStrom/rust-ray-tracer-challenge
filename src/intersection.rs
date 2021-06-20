@@ -21,7 +21,7 @@ impl<'a> Intersection<'a> {
         if inside {
             normalv = -normalv;
         }
-        // let reflectv = ray.direction.reflect(normalv);
+        let reflectv = ray.direction.reflect(normalv);
         Computations {
             t: self.t,
             object: self.object,
@@ -29,7 +29,7 @@ impl<'a> Intersection<'a> {
             over_point: point + normalv * MARGIN.epsilon,
             eyev,
             normalv,
-            // reflectv,
+            reflectv,
             inside,
         }
     }
@@ -84,13 +84,19 @@ pub struct Computations<'a> {
     pub over_point: Tuple,
     pub eyev: Tuple,
     pub normalv: Tuple,
-    // pub reflectv: Tuple,
+    pub reflectv: Tuple,
     inside: bool,
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{shapes::sphere::Sphere, shapes::ShapeBuilder, transformations::Transform};
+    use std::f32::consts::SQRT_2;
+
+    use crate::{
+        shapes::ShapeBuilder,
+        shapes::{plane::Plane, sphere::Sphere},
+        transformations::Transform,
+    };
 
     use super::*;
 
@@ -233,19 +239,19 @@ mod tests {
         assert!(comps.point.z() > comps.over_point.z());
     }
 
-    // #[test]
-    // fn precomputing_the_reflection_vector() {
-    //     let shape = Object::Plane(Plane::default());
-    //     let r = Ray::default()
-    //         .origin(0.0, 1.0, -1.0)
-    //         .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
-    //     let i = Intersection::new(SQRT_2, shape);
+    #[test]
+    fn precomputing_the_reflection_vector() {
+        let shape = Plane::default();
+        let r = Ray::default()
+            .origin(0.0, 1.0, -1.0)
+            .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
+        let i = Intersection::new(SQRT_2, &shape);
 
-    //     let comps = i.prepare_computations(r).unwrap();
+        let comps = i.prepare_computations(r);
 
-    //     f_assert_eq!(
-    //         comps.reflectv,
-    //         &Tuple::vector(0.0, SQRT_2 / 2.0, SQRT_2 / 2.0)
-    //     );
-    // }
+        assert_eq!(
+            comps.reflectv,
+            Tuple::vector(0.0, SQRT_2 / 2.0, SQRT_2 / 2.0)
+        );
+    }
 }

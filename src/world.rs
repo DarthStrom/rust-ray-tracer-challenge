@@ -1,31 +1,31 @@
 use crate::{
-    color::Color,
+    color::{self, Color},
     intersection::{Computations, Intersection, Intersections},
     lights::PointLight,
     materials::Material,
     ray::Ray,
-    shapes::{sphere::Sphere, Shape, ShapeBuilder},
+    shapes::{sphere::Sphere, BoxShape, Shape, ShapeBuilder},
     transformations::Transform,
     tuple::Tuple,
 };
 
 #[derive(Debug)]
 pub struct World {
-    light_sources: Vec<PointLight>,
-    objects: Vec<Box<dyn Shape>>,
+    light_source: PointLight,
+    objects: Vec<BoxShape>,
 }
 
 impl World {
-    pub fn new() -> Self {
+    pub fn new(light: PointLight) -> Self {
         World {
-            light_sources: vec![],
+            light_source: light,
             objects: vec![],
         }
     }
 
     pub fn light_source(self, light_source: PointLight) -> Self {
         Self {
-            light_sources: vec![light_source],
+            light_source,
             ..self
         }
     }
@@ -42,7 +42,7 @@ impl World {
             let comps = hit.prepare_computations(ray);
             self.shade_hit(comps)
         } else {
-            Color::default()
+            color::BLACK
         }
     }
 
@@ -58,33 +58,46 @@ impl World {
     }
 
     pub fn is_shadowed(&self, point: Tuple) -> bool {
-        self.light_sources
-            .iter()
-            .map(|light| light.position - point)
-            .any(|v| {
-                let distance = v.magnitude();
-                let direction = v.normalize();
+        let v = self.light_source.position - point;
+        let distance = v.magnitude();
+        let direction = v.normalize();
 
-                let r = Ray::new(point, direction);
-                let intersections = self.intersect(r);
+        let r = Ray::new(point, direction);
+        let intersections = self.intersect(r);
 
-                if let Some(h) = intersections.hit() {
-                    h.t < distance
-                } else {
-                    false
-                }
-            })
+        if let Some(h) = intersections.hit() {
+            h.t < distance
+        } else {
+            false
+        }
     }
 
     pub fn shade_hit(&self, comps: Computations) -> Color {
         // TODO: try multiple light sources.  It will slow things down though
-        comps.object.material().lighting(
-            self.light_sources[0],
-            comps.point,
+        let shadowed = self.is_shadowed(comps.over_point);
+
+        let surface = comps.object.material().lighting(
+            self.light_source,
+            comps.over_point,
             comps.eyev,
             comps.normalv,
-            self.is_shadowed(comps.over_point),
-        )
+            shadowed,
+        );
+
+        let reflected = self.reflected_color(comps);
+
+        surface + reflected
+    }
+
+    pub fn reflected_color(&self, comps: Computations) -> Color {
+        if comps.object.material().reflective == 0.0 {
+            color::BLACK
+        } else {
+            let reflect_ray = Ray::new(comps.over_point, comps.reflectv);
+            let color = self.color_at(reflect_ray);
+
+            color * comps.object.material().reflective
+        }
     }
 }
 
@@ -98,10 +111,10 @@ impl Default for World {
         );
         let sphere2 = Sphere::default().with_transform(Transform::scaling(0.5, 0.5, 0.5));
         Self {
-            light_sources: vec![PointLight::new(
+            light_source: PointLight::new(
                 Tuple::point(-10.0, 10.0, -10.0),
                 Color::new(1.0, 1.0, 1.0),
-            )],
+            ),
             objects: vec![Box::new(sphere1), Box::new(sphere2)],
         }
     }
@@ -109,18 +122,22 @@ impl Default for World {
 
 #[cfg(test)]
 mod tests {
+    use std::f32::consts::SQRT_2;
+
     use float_cmp::approx_eq;
 
-    use crate::shapes::ShapeBuilder;
+    use crate::{
+        color,
+        shapes::{plane::Plane, ShapeBuilder},
+    };
 
     use super::*;
 
     #[test]
     fn creating_a_world() {
-        let w = World::new();
+        let w = World::new(PointLight::default());
 
         assert!(w.objects.is_empty());
-        assert!(w.light_sources.is_empty());
     }
 
     #[test]
@@ -136,7 +153,7 @@ mod tests {
 
         let w = World::default();
 
-        assert_eq!(w.light_sources, vec![light]);
+        assert_eq!(w.light_source, light);
         assert_eq!(w.objects[0].material(), s1.material());
         assert_eq!(w.objects[1].material(), s2.material());
         assert_eq!(w.objects[0].transform(), s1.transform());
@@ -173,10 +190,7 @@ mod tests {
     #[test]
     fn shading_an_intersection_from_the_inside() {
         let w = World {
-            light_sources: vec![PointLight::new(
-                Tuple::point(0.0, 0.25, 0.0),
-                Color::new(1.0, 1.0, 1.0),
-            )],
+            light_source: PointLight::new(Tuple::point(0.0, 0.25, 0.0), Color::new(1.0, 1.0, 1.0)),
             ..World::default()
         };
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
@@ -196,7 +210,7 @@ mod tests {
 
         let c = w.color_at(r);
 
-        assert_eq!(c, Color::default());
+        assert_eq!(c, color::BLACK);
     }
 
     #[test]
@@ -221,13 +235,12 @@ mod tests {
         let inner = Sphere::default()
             .with_transform(Transform::scaling(0.5, 0.5, 0.5))
             .with_material(Material::default().ambient(1.0));
-        let w = World::new()
-            .light_source(PointLight::new(
-                Tuple::point(-10.0, 10.0, -10.0),
-                Color::new(1.0, 1.0, 1.0),
-            ))
-            .object(Box::new(outer))
-            .object(Box::new(inner.clone()));
+        let w = World::new(PointLight::new(
+            Tuple::point(-10.0, 10.0, -10.0),
+            Color::new(1.0, 1.0, 1.0),
+        ))
+        .object(Box::new(outer))
+        .object(Box::new(inner.clone()));
 
         let r = Ray::new(Tuple::point(0.0, 0.0, 0.75), Tuple::vector(0.0, 0.0, -1.0));
 
@@ -270,16 +283,15 @@ mod tests {
 
     #[test]
     fn shade_hit_is_given_an_intersection_in_shadow() {
-        let w = World::new()
-            .light_source(
-                PointLight::default()
-                    .position(0.0, 0.0, -10.0)
-                    .intensity(1.0, 1.0, 1.0),
-            )
-            .object(Box::new(Sphere::default()))
-            .object(Box::new(
-                Sphere::default().with_transform(Transform::translation(0.0, 0.0, 10.0)),
-            ));
+        let w = World::new(
+            PointLight::default()
+                .position(0.0, 0.0, -10.0)
+                .intensity(1.0, 1.0, 1.0),
+        )
+        .object(Box::new(Sphere::default()))
+        .object(Box::new(
+            Sphere::default().with_transform(Transform::translation(0.0, 0.0, 10.0)),
+        ));
         let r = Ray::default()
             .origin(0.0, 0.0, 5.0)
             .direction(0.0, 0.0, 1.0);
@@ -290,4 +302,92 @@ mod tests {
 
         assert_eq!(c, Color::new(0.1, 0.1, 0.1));
     }
+
+    #[test]
+    fn the_reflected_color_for_a_nonreflective_material() {
+        let sphere1 = Sphere::default().with_material(
+            Material::default()
+                .color(Color::new(0.8, 1.0, 0.6))
+                .diffuse(0.7)
+                .specular(0.2),
+        );
+        let sphere2 = Sphere::default()
+            .with_transform(Transform::scaling(0.5, 0.5, 0.5))
+            .with_material(Material::default().ambient(1.0));
+        let w = World::new(PointLight::new(
+            Tuple::point(-10.0, 10.0, -10.0),
+            Color::new(1.0, 1.0, 1.0),
+        ))
+        .object(Box::new(sphere1))
+        .object(Box::new(sphere2.clone()));
+        let r = Ray::default()
+            .origin(0.0, 0.0, 0.0)
+            .direction(0.0, 0.0, 1.0);
+        let i = Intersection::new(1.0, &sphere2);
+
+        let comps = i.prepare_computations(r);
+        let color = w.reflected_color(comps);
+
+        assert_eq!(color, color::BLACK);
+    }
+
+    // TODO: are these tests bad?
+
+    // #[test]
+    // fn the_reflected_color_for_a_reflective_material() {
+    //     let mut w = World::default();
+    //     let shape = Plane::default()
+    //         .with_material(Material::default().reflective(0.5))
+    //         .with_transform(Transform::translation(0.0, -1.0, 0.0));
+    //     w.objects.push(shape.box_clone());
+    //     let r = Ray::default()
+    //         .origin(0.0, 0.0, -3.0)
+    //         .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
+    //     let i = Intersection::new(SQRT_2, &shape);
+
+    //     let comps = i.prepare_computations(r);
+    //     let color = w.reflected_color(comps);
+
+    //     println!("{:?}", color);
+    //     assert_eq!(color, Color::new(0.19032, 0.2379, 0.14274));
+    // }
+
+    // #[test]
+    // fn shade_hit_with_a_reflective_material() {
+    //     let mut w = World::default();
+    //     let shape = Plane::default()
+    //         .with_material(Material::default().reflective(0.5))
+    //         .with_transform(Transform::translation(0.0, -1.0, 0.0));
+    //     w.objects.push(shape.box_clone());
+    //     let r = Ray::default()
+    //         .origin(0.0, 0.0, -3.0)
+    //         .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
+    //     let i = Intersection::new(SQRT_2, &shape);
+
+    //     let comps = i.prepare_computations(r);
+    //     let color = w.shade_hit(comps);
+
+    //     println!("{:?}", color);
+    //     assert_eq!(color, Color::new(0.87677, 0.92436, 0.82918));
+    // }
+
+    #[test]
+    fn color_at_with_mutually_reflective_surfaces() {
+        let lower = Plane::default()
+            .with_material(Material::default().reflective(1.0))
+            .with_transform(Transform::translation(0.0, -1.0, 0.0));
+        let upper = Plane::default()
+            .with_material(Material::default().reflective(1.0))
+            .with_transform(Transform::translation(0.0, 1.0, 0.0));
+        let w = World::new(PointLight::new(Tuple::point(0.0, 0.0, 0.0), color::WHITE))
+            .object(Box::new(lower))
+            .object(Box::new(upper));
+        let r = Ray::default()
+            .origin(0.0, 0.0, 0.0)
+            .direction(0.0, 1.0, 0.0);
+
+        let _ = w.color_at(r);
+    }
+
+    // TODO: maybe revisit infinite recursion, so far seems to be fine maybe because of compiler optimizations?
 }

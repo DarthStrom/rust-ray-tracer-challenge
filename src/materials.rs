@@ -217,12 +217,12 @@ mod tests {
         assert_eq!(c2, color::BLACK);
     }
 
-    // #[test]
-    // fn reflectivity_for_the_default_material() {
-    //     let (m, _) = shared_setup();
+    #[test]
+    fn reflectivity_for_the_default_material() {
+        let (m, _) = shared_setup();
 
-    //     f_assert_eq!(m.reflective, 0.0);
-    // }
+        assert!(approx_eq!(f32, m.reflective, 0.0));
+    }
 
     fn shared_setup() -> (Material, Tuple) {
         (Material::default(), Tuple::point(0.0, 0.0, 0.0))

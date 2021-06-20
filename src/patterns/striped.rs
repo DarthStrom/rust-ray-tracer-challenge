@@ -2,7 +2,6 @@ use std::any::Any;
 
 use crate::{
     color::{self, Color},
-    shapes::Shape,
     transformations::Transform,
     tuple::Tuple,
 };
@@ -23,13 +22,6 @@ impl Striped {
             b,
             transform: Transform::default(),
         }
-    }
-
-    fn stripe_at_object(&self, object: &dyn Shape, world_point: Tuple) -> Color {
-        let object_point = object.transform().inverse() * world_point;
-        let pattern_point = self.transform.inverse() * object_point;
-
-        self.pattern_at(pattern_point)
     }
 }
 
@@ -60,6 +52,10 @@ impl Pattern for Striped {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn transform(&self) -> &Transform {
+        &self.transform
     }
 
     fn pattern_at(&self, point: Tuple) -> Color {
@@ -160,7 +156,7 @@ mod tests {
         let object = Sphere::default().with_transform(Transform::scaling(2.0, 2.0, 2.0));
         let pattern = Striped::new(color::WHITE, color::BLACK);
 
-        let c = pattern.stripe_at_object(&object, Tuple::point(1.5, 0.0, 0.0));
+        let c = pattern.pattern_at_shape(&object, Tuple::point(1.5, 0.0, 0.0));
 
         assert_eq!(c, color::WHITE);
     }
@@ -171,7 +167,7 @@ mod tests {
         let pattern = Striped::new(color::WHITE, color::BLACK)
             .with_transform(Transform::scaling(2.0, 2.0, 2.0));
 
-        let c = pattern.stripe_at_object(&object, Tuple::point(1.5, 0.0, 0.0));
+        let c = pattern.pattern_at_shape(&object, Tuple::point(1.5, 0.0, 0.0));
 
         assert_eq!(c, color::WHITE);
     }
@@ -182,7 +178,7 @@ mod tests {
         let pattern = Striped::new(color::WHITE, color::BLACK)
             .with_transform(Transform::translation(0.5, 0.0, 0.0));
 
-        let c = pattern.stripe_at_object(&object, Tuple::point(2.5, 0.0, 0.0));
+        let c = pattern.pattern_at_shape(&object, Tuple::point(2.5, 0.0, 0.0));
 
         assert_eq!(c, color::WHITE);
     }

@@ -54,6 +54,10 @@ impl Pattern for Gradient {
         self
     }
 
+    fn transform(&self) -> &Transform {
+        &self.transform
+    }
+
     fn pattern_at(&self, point: Tuple) -> Color {
         let distance = self.b - self.a;
         let fraction = point.x() - point.x().floor();

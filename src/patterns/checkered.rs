@@ -54,6 +54,10 @@ impl Pattern for Checkered {
         self
     }
 
+    fn transform(&self) -> &Transform {
+        &self.transform
+    }
+
     fn pattern_at(&self, point: Tuple) -> Color {
         if (point.x().floor() + point.y().floor() + point.z().floor()) as u32 % 2 == 0 {
             self.a

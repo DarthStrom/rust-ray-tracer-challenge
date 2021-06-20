@@ -54,6 +54,10 @@ impl Pattern for Ring {
         self
     }
 
+    fn transform(&self) -> &Transform {
+        &self.transform
+    }
+
     fn pattern_at(&self, point: Tuple) -> Color {
         if (point.x() * point.x() + point.z() * point.z())
             .sqrt()

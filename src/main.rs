@@ -89,15 +89,14 @@ fn main() {
                 .specular(0.3),
         );
 
-    let world = World::new()
-        .light_source(PointLight::new(
-            Tuple::point(-10.0, 10.0, -10.0),
-            color::WHITE,
-        ))
-        .object(Box::new(floor))
-        .object(Box::new(left))
-        .object(Box::new(middle))
-        .object(Box::new(right));
+    let world = World::new(PointLight::new(
+        Tuple::point(-10.0, 10.0, -10.0),
+        color::WHITE,
+    ))
+    .object(Box::new(floor))
+    .object(Box::new(left))
+    .object(Box::new(middle))
+    .object(Box::new(right));
 
     let camera = Camera::new(1000, 500, PI / 3.0).transform(Transform::view_transform(
         Tuple::point(0.0, 1.5, -5.0),
