@@ -1,100 +1,110 @@
 #![allow(dead_code)]
 
-use camera::Camera;
-use color::Color;
-use float_cmp::F64Margin;
-
-use light::PointLight;
-use material::Material;
-use matrix::transform::Transform;
-use shape::{plane::Plane, sphere::Sphere, Object};
-use std::{f64::consts::PI, fs};
-use tuple::Tuple;
-use world::World;
-
-pub const MARGIN: F64Margin = F64Margin {
-    ulps: 2,
-    epsilon: 0.00001,
-};
-
-#[cfg(test)]
-macro_rules! f_assert_eq {
-    ($a:expr, $b:expr) => {
-        assert!($a.approx_eq($b, $crate::MARGIN));
-    };
-}
-
 mod camera;
 mod canvas;
 mod color;
-mod light;
-mod material;
-mod matrix;
-mod pattern;
+mod intersection;
+mod lights;
+mod materials;
+mod patterns;
 mod ray;
-mod shape;
+mod shapes;
+mod transformations;
 mod tuple;
 mod world;
 
 #[cfg(test)]
 mod test;
 
-// TODO: make the API more consistent based on this usage
+use std::{f32::consts::PI, fs};
 
-#[allow(unused_variables)]
+use camera::Camera;
+use color::Color;
+use float_cmp::F32Margin;
+use lights::PointLight;
+use materials::Material;
+use shapes::plane::Plane;
+use shapes::sphere::Sphere;
+use shapes::ShapeBuilder;
+use transformations::Transform;
+use tuple::*;
+use world::World;
+
+pub const MARGIN: F32Margin = F32Margin {
+    ulps: 2,
+    epsilon: 0.001,
+};
+
+#[derive(Clone, Copy)]
+struct Projectile {
+    position: Tuple,
+    velocity: Tuple,
+}
+
+#[derive(Clone, Copy)]
+struct Environment {
+    gravity: Tuple,
+    wind: Tuple,
+}
+
+fn tick(env: Environment, proj: Projectile) -> Projectile {
+    let position = proj.position + proj.velocity;
+    let velocity = proj.velocity + env.gravity + env.wind;
+    Projectile { position, velocity }
+}
+
 fn main() {
     let floor_material = Material::default()
         .color(Color::new(1.0, 0.9, 0.9))
         .specular(0.0);
-    let floor = Object::Plane(Plane::default().material(floor_material));
 
-    let middle = Object::Sphere(
-        Sphere::default()
-            .transform(Transform::translation(-0.5, 1.0, 0.5))
-            .material(
-                Material::default()
-                    .color(Color::new(0.1, 1.0, 0.5))
-                    .diffuse(0.7)
-                    .specular(0.3),
-            ),
-    );
+    let floor = Plane::default().with_material(floor_material);
 
-    let right = Object::Sphere(
-        Sphere::default()
-            .transform(Transform::scaling(0.5, 0.5, 0.5).translate(1.5, 0.5, -0.5))
-            .material(
-                Material::default()
-                    .color(Color::new(0.5, 1.0, 0.1))
-                    .diffuse(0.7)
-                    .specular(0.3),
-            ),
-    );
+    let middle = Sphere::default()
+        .with_transform(Transform::translation(-0.5, 1.0, 0.5))
+        .with_material(
+            Material::default()
+                .color(Color::new(0.1, 1.0, 0.5))
+                .diffuse(0.7)
+                .specular(0.3),
+        );
 
-    let left = Object::Sphere(
-        Sphere::default()
-            .transform(Transform::scaling(0.33, 0.33, 0.33).translate(-1.5, 0.33, -0.75))
-            .material(
-                Material::default()
-                    .color(Color::new(1.0, 0.8, 0.1))
-                    .diffuse(0.7)
-                    .specular(0.3),
-            ),
-    );
+    let right = Sphere::default()
+        .with_transform(Transform::translation(1.5, 0.5, -0.5) * Transform::scaling(0.5, 0.5, 0.5))
+        .with_material(
+            Material::default()
+                .color(Color::new(0.5, 1.0, 0.1))
+                .diffuse(0.7)
+                .specular(0.3),
+        );
 
-    let world = World::new()
-        .objects(&[floor, middle, right, left])
-        .light_sources(&[PointLight::new(
-            Tuple::point(-10.0, 10.0, -10.0),
-            Color::new(1.0, 1.0, 1.0),
-        )]);
+    let left = Sphere::default()
+        .with_transform(
+            Transform::translation(-1.5, 0.33, -0.75) * Transform::scaling(0.33, 0.33, 0.33),
+        )
+        .with_material(
+            Material::default()
+                .color(Color::new(1.0, 0.8, 0.1))
+                .diffuse(0.7)
+                .specular(0.3),
+        );
 
-    let camera = Camera::new(100, 50, PI / 3.0).transform(
+    let world = World::new(PointLight::new(
+        Tuple::point(-10.0, 10.0, -10.0),
+        color::WHITE,
+    ))
+    .object(Box::new(floor))
+    .object(Box::new(left))
+    .object(Box::new(middle))
+    .object(Box::new(right));
+
+    let camera = Camera::new(1000, 500, PI / 3.0).transform(Transform::view_transform(
         Tuple::point(0.0, 1.5, -5.0),
         Tuple::point(0.0, 1.0, 0.0),
         Tuple::vector(0.0, 1.0, 0.0),
-    );
+    ));
 
-    let c = camera.render(&world);
+    let canvas = camera.render(&world);
 
-    fs::write("canvas.ppm", c.to_ppm()).unwrap();
+    fs::write("canvas.ppm", canvas.to_ppm()).unwrap();
 }

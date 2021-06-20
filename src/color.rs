@@ -1,84 +1,76 @@
-use crate::tuple::Tuple;
-use float_cmp::{ApproxEq, F64Margin};
 use std::ops::{Add, Mul, Sub};
 
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub struct Color {
-    tuple: Tuple,
-}
+use bevy::{math::Vec4, render::color};
+use float_cmp::approx_eq;
 
-fn hadamard_product(c1: Color, c2: Color) -> Color {
-    Color::new(
-        c1.red() * c2.red(),
-        c1.green() * c2.green(),
-        c1.blue() * c2.blue(),
-    )
-}
+#[derive(Clone, Copy, Debug)]
+pub struct Color(color::Color);
+
+pub const BLACK: Color = Color(color::Color::BLACK);
+pub const WHITE: Color = Color(color::Color::WHITE);
 
 impl Color {
-    pub fn new(red: f64, green: f64, blue: f64) -> Self {
-        Self {
-            tuple: Tuple::vector(red, green, blue),
-        }
+    pub fn new(red: f32, green: f32, blue: f32) -> Self {
+        Self(color::Color::rgb(red, green, blue))
     }
 
-    pub fn black() -> Self {
-        Self::new(0.0, 0.0, 0.0)
+    pub fn red(self) -> f32 {
+        self.0.r()
     }
 
-    pub fn white() -> Self {
-        Self::new(1.0, 1.0, 1.0)
+    pub fn green(self) -> f32 {
+        self.0.g()
     }
 
-    pub fn red(&self) -> f64 {
-        self.tuple.x
-    }
-
-    pub fn green(&self) -> f64 {
-        self.tuple.y
-    }
-
-    pub fn blue(&self) -> f64 {
-        self.tuple.z
+    pub fn blue(self) -> f32 {
+        self.0.b()
     }
 }
 
-impl<'a> ApproxEq for &'a Color {
-    type Margin = F64Margin;
+impl Default for Color {
+    fn default() -> Self {
+        BLACK
+    }
+}
 
-    fn approx_eq<T: Into<Self::Margin>>(self, other: Self, margin: T) -> bool {
-        let margin = margin.into();
-        self.tuple.approx_eq(&other.tuple, margin)
+impl PartialEq for Color {
+    fn eq(&self, other: &Self) -> bool {
+        let epsilon = 0.001;
+        approx_eq!(f32, self.0.r(), other.0.r(), epsilon = epsilon)
+            && approx_eq!(f32, self.0.g(), other.0.g(), epsilon = epsilon)
+            && approx_eq!(f32, self.0.b(), other.0.b(), epsilon = epsilon)
     }
 }
 
 impl Add for Color {
     type Output = Self;
 
-    fn add(self, other: Self) -> Self::Output {
-        Self {
-            tuple: self.tuple + other.tuple,
-        }
+    fn add(self, rhs: Self) -> Self::Output {
+        let self_vec = Vec4::from(self.0);
+        let rhs_vec = Vec4::from(rhs.0);
+        let new_vec = self_vec + rhs_vec;
+
+        Self(color::Color::rgb(new_vec.x, new_vec.y, new_vec.z))
     }
 }
 
 impl Sub for Color {
     type Output = Self;
 
-    fn sub(self, other: Self) -> Self::Output {
-        Self {
-            tuple: self.tuple - other.tuple,
-        }
+    fn sub(self, rhs: Self) -> Self::Output {
+        let self_vec = Vec4::from(self.0);
+        let rhs_vec = Vec4::from(rhs.0);
+        let new_vec = self_vec - rhs_vec;
+
+        Self(color::Color::rgb(new_vec.x, new_vec.y, new_vec.z))
     }
 }
 
-impl Mul<f64> for Color {
+impl Mul<f32> for Color {
     type Output = Self;
 
-    fn mul(self, rhs: f64) -> Self::Output {
-        Self {
-            tuple: self.tuple * rhs,
-        }
+    fn mul(self, rhs: f32) -> Self::Output {
+        Self(self.0 * rhs)
     }
 }
 
@@ -90,17 +82,23 @@ impl Mul for Color {
     }
 }
 
+fn hadamard_product(c1: Color, c2: Color) -> Color {
+    Color(color::Color::rgb(
+        c1.0.r() * c2.0.r(),
+        c1.0.g() * c2.0.g(),
+        c1.0.b() * c2.0.b(),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
-    use float_cmp::F64Margin;
-
     use super::*;
 
     #[test]
     fn colors_are_rgb_tuples() {
         let c = Color::new(-0.5, 0.4, 1.7);
 
-        assert!(c.approx_eq(&Color::new(-0.5, 0.4, 1.7), F64Margin::default()));
+        assert_eq!(c, Color::new(-0.5, 0.4, 1.7));
     }
 
     #[test]
@@ -108,7 +106,7 @@ mod tests {
         let c1 = Color::new(0.9, 0.6, 0.75);
         let c2 = Color::new(0.7, 0.1, 0.25);
 
-        assert!((c1 + c2).approx_eq(&Color::new(1.6, 0.7, 1.0), F64Margin::default()));
+        assert_eq!(c1 + c2, Color::new(1.6, 0.7, 1.0));
     }
 
     #[test]
@@ -116,14 +114,14 @@ mod tests {
         let c1 = Color::new(0.9, 0.6, 0.75);
         let c2 = Color::new(0.7, 0.1, 0.25);
 
-        assert!((c1 - c2).approx_eq(&Color::new(0.2, 0.5, 0.5), F64Margin::default()));
+        assert_eq!(c1 - c2, Color::new(0.2, 0.5, 0.5));
     }
 
     #[test]
     fn multiplying_a_color_by_a_scalar() {
         let c = Color::new(0.2, 0.3, 0.4);
 
-        assert!((c * 2.0).approx_eq(&Color::new(0.4, 0.6, 0.8), F64Margin::default()));
+        assert_eq!(c * 2.0, Color::new(0.4, 0.6, 0.8));
     }
 
     #[test]
@@ -131,6 +129,6 @@ mod tests {
         let c1 = Color::new(1.0, 0.2, 0.4);
         let c2 = Color::new(0.9, 1.0, 0.1);
 
-        assert!((c1 * c2).approx_eq(&Color::new(0.9, 0.2, 0.04), F64Margin::default()));
+        assert_eq!(c1 * c2, Color::new(0.9, 0.2, 0.04));
     }
 }

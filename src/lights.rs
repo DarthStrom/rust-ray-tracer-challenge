@@ -14,14 +14,14 @@ impl PointLight {
         }
     }
 
-    pub fn position(self, x: f64, y: f64, z: f64) -> Self {
+    pub fn position(self, x: f32, y: f32, z: f32) -> Self {
         Self {
             position: Tuple::point(x, y, z),
             ..self
         }
     }
 
-    pub fn intensity(self, r: f64, g: f64, b: f64) -> Self {
+    pub fn intensity(self, r: f32, g: f32, b: f32) -> Self {
         Self {
             intensity: Color::new(r, g, b),
             ..self
@@ -31,11 +31,10 @@ impl PointLight {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
-    fn point_light_has_position_and_intensity() {
+    fn a_point_light_has_a_position_and_intensity() {
         let intensity = Color::new(1.0, 1.0, 1.0);
         let position = Tuple::point(0.0, 0.0, 0.0);
 

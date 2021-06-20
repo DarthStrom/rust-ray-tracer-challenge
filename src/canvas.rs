@@ -1,4 +1,4 @@
-use crate::color::Color;
+use crate::{color, color::Color};
 
 #[derive(Debug)]
 pub struct Canvas {
@@ -10,7 +10,7 @@ pub struct Canvas {
 impl Canvas {
     pub fn new(width: usize, height: usize) -> Self {
         let pixels = (0..width * height)
-            .map(|_| Color::default())
+            .map(|_| color::BLACK)
             .collect::<Vec<_>>();
         Self {
             width,
@@ -73,7 +73,7 @@ fn split_long_ppm_line(line: &str) -> String {
     }
 }
 
-fn color_u8(color: f64) -> u8 {
+fn color_u8(color: f32) -> u8 {
     if color >= 256.0 {
         255
     } else if color <= 0.0 {
@@ -85,7 +85,6 @@ fn color_u8(color: f64) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use float_cmp::{ApproxEq, F64Margin};
     use std::vec;
 
     use super::*;
@@ -97,7 +96,7 @@ mod tests {
         assert_eq!(c.width, 10);
         assert_eq!(c.height, 20);
         for pixel in c.pixels {
-            assert!(pixel.approx_eq(&Color::new(0.0, 0.0, 0.0), F64Margin::default()));
+            assert_eq!(pixel, Color::new(0.0, 0.0, 0.0));
         }
     }
 
@@ -108,7 +107,7 @@ mod tests {
 
         c.write_pixel(2, 3, red);
 
-        assert!(c.pixel_at(2, 3).approx_eq(&red, F64Margin::default()));
+        assert_eq!(c.pixel_at(2, 3), red);
     }
 
     #[test]
