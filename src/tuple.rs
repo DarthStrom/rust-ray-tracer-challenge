@@ -276,7 +276,6 @@ mod tests {
         let v = Tuple::vector(-1.0, -2.0, -3.0);
 
         approx_eq!(f32, v.magnitude(), 14_f32.sqrt());
-
     }
 
     #[test]

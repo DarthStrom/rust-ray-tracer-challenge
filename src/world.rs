@@ -31,7 +31,6 @@ impl World {
     }
 
     pub fn object(self, object: Box<dyn Shape>) -> Self {
-
         let mut objects = self.objects;
         objects.push(object);
 

@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn ray_through_corner_of_canvas() {
         let c = Camera::new(201, 101, PI / 2.0);
-      
+
         let r = c.ray_for_pixel(0, 0);
 
         assert_eq!(r.origin, Tuple::point(0.0, 0.0, 0.0));
