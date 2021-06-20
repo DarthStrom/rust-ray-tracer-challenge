@@ -53,6 +53,48 @@ fn tick(env: Environment, proj: Projectile) -> Projectile {
     Projectile { position, velocity }
 }
 
+use camera::Camera;
+use color::Color;
+use float_cmp::F64Margin;
+
+use light::PointLight;
+use material::Material;
+use matrix::transform::Transform;
+use shape::{plane::Plane, sphere::Sphere, Object};
+use std::{f64::consts::PI, fs};
+use tuple::Tuple;
+use world::World;
+
+pub const MARGIN: F64Margin = F64Margin {
+    ulps: 2,
+    epsilon: 0.00001,
+};
+
+#[cfg(test)]
+macro_rules! f_assert_eq {
+    ($a:expr, $b:expr) => {
+        assert!($a.approx_eq($b, $crate::MARGIN));
+    };
+}
+
+mod camera;
+mod canvas;
+mod color;
+mod light;
+mod material;
+mod matrix;
+mod pattern;
+mod ray;
+mod shape;
+mod tuple;
+mod world;
+
+#[cfg(test)]
+mod test;
+
+// TODO: make the API more consistent based on this usage
+
+#[allow(unused_variables)]
 fn main() {
     let floor_material = Material::default()
         .color(Color::new(1.0, 0.9, 0.9))
