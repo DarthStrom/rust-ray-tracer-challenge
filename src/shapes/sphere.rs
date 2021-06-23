@@ -15,6 +15,12 @@ pub struct Sphere {
     pub material: Material,
 }
 
+impl Sphere {
+    pub fn glass() -> Self {
+        Self::default().with_material(Material::default().transparency(1.0).refractive_index(1.5))
+    }
+}
+
 impl ShapeBuilder for Sphere {
     fn with_transform(self, transform: Transform) -> Self {
         Self { transform, ..self }
@@ -95,7 +101,10 @@ fn discriminant(ray: Ray) -> f32 {
 mod tests {
     use float_cmp::approx_eq;
 
-    use crate::{test::*, transformations::IDENTITY};
+    use crate::{
+        test::*,
+        transformations::{self, IDENTITY},
+    };
     use std::f32::consts::{FRAC_1_SQRT_2, PI};
 
     use super::*;
@@ -269,5 +278,14 @@ mod tests {
         let n = s.normal_at(0.0, sqrt_n_over_n(2), -sqrt_n_over_n(2));
 
         assert_eq!(n, Tuple::vector(0.0, 0.97014, -0.24254));
+    }
+
+    #[test]
+    fn a_helper_for_producing_a_sphere_with_a_glassy_material() {
+        let s = Sphere::glass();
+
+        assert_eq!(s.transform, transformations::IDENTITY);
+        assert!(approx_eq!(f32, s.material.transparency, 1.0));
+        assert!(approx_eq!(f32, s.material.refractive_index, 1.5));
     }
 }

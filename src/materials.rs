@@ -13,6 +13,8 @@ pub struct Material {
     pub reflective: f32,
     pub specular: f32,
     pub shininess: f32,
+    pub transparency: f32,
+    pub refractive_index: f32,
     pub pattern: Option<BoxPattern>,
 }
 
@@ -39,6 +41,20 @@ impl Material {
 
     pub fn shininess(self, shininess: f32) -> Self {
         Self { shininess, ..self }
+    }
+
+    pub fn transparency(self, transparency: f32) -> Self {
+        Self {
+            transparency,
+            ..self
+        }
+    }
+
+    pub fn refractive_index(self, refractive_index: f32) -> Self {
+        Self {
+            refractive_index,
+            ..self
+        }
     }
 
     pub fn pattern(self, pattern: BoxPattern) -> Self {
@@ -95,6 +111,8 @@ impl Default for Material {
             specular: 0.9,
             shininess: 200.0,
             pattern: None,
+            transparency: 0.0,
+            refractive_index: 1.0,
         }
     }
 }
@@ -226,5 +244,13 @@ mod tests {
 
     fn shared_setup() -> (Material, Tuple) {
         (Material::default(), Tuple::point(0.0, 0.0, 0.0))
+    }
+
+    #[test]
+    fn transparency_and_refractive_index_for_the_default_material() {
+        let m = Material::default();
+
+        assert!(approx_eq!(f32, m.transparency, 0.0));
+        assert!(approx_eq!(f32, m.refractive_index, 1.0));
     }
 }
