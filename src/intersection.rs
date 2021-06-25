@@ -25,11 +25,12 @@ impl<'a> Intersection<'a> {
         let point = ray.position(self.t);
         let eyev = -ray.direction;
         let mut normalv = self.object.normal_at(point.x(), point.y(), point.z());
+        let reflectv = ray.direction.reflect(normalv);
+
         let inside = normalv.dot(eyev) < 0.0;
         if inside {
             normalv = -normalv;
         }
-        let reflectv = ray.direction.reflect(normalv);
 
         let mut n1 = 0.0;
         let mut n2 = 0.0;
@@ -144,6 +145,27 @@ pub struct Computations<'a> {
     inside: bool,
 }
 
+impl<'a> Computations<'a> {
+    pub fn schlick(&self) -> f32 {
+        let mut cos = self.eyev.dot(self.normalv);
+
+        if self.n1 > self.n2 {
+            let n = self.n1 / self.n2;
+            let sin2_t = n.powf(2.0) * (1.0 - cos.powf(2.0));
+            if sin2_t > 1.0 {
+                return 1.0;
+            }
+
+            let cos_t = (1.0 - sin2_t).sqrt();
+
+            cos = cos_t
+        }
+
+        let r0 = ((self.n1 - self.n2) / (self.n1 + self.n2)).powf(2.0);
+        r0 + (1.0 - r0) * (1.0 - cos).powf(5.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::f32::consts::SQRT_2;
@@ -152,6 +174,7 @@ mod tests {
         materials::Material,
         shapes::ShapeBuilder,
         shapes::{plane::Plane, sphere::Sphere},
+        test::sqrt_n_over_n,
         transformations::Transform,
     };
 
@@ -363,5 +386,56 @@ mod tests {
 
         assert!(comps.under_point.z() > MARGIN.epsilon / 2.0);
         assert!(comps.point.z() < comps.under_point.z());
+    }
+
+    #[test]
+    fn the_schlick_approximation_under_total_internal_reflection() {
+        let shape = Sphere::glass();
+        let r = Ray::default()
+            .origin(0.0, 0.0, sqrt_n_over_n(2))
+            .direction(0.0, 1.0, 0.0);
+        let xs = Intersections::new(vec![
+            Intersection::new(-sqrt_n_over_n(2), &shape),
+            Intersection::new(sqrt_n_over_n(2), &shape),
+        ]);
+        let xs_copy = xs.clone();
+
+        let comps = xs[1].prepare_computations(r, xs_copy);
+        let reflectance = comps.schlick();
+
+        assert!(approx_eq!(f32, reflectance, 1.0));
+    }
+
+    #[test]
+    fn the_schlick_approximation_with_a_perpendicular_viewing_angle() {
+        let shape = Sphere::glass();
+        let r = Ray::default()
+            .origin(0.0, 0.0, 0.0)
+            .direction(0.0, 1.0, 0.0);
+        let xs = Intersections::new(vec![
+            Intersection::new(-1.0, &shape),
+            Intersection::new(1.0, &shape),
+        ]);
+        let xs_copy = xs.clone();
+
+        let comps = xs[1].prepare_computations(r, xs_copy);
+        let reflectance = comps.schlick();
+
+        assert!(approx_eq!(f32, reflectance, 0.04));
+    }
+
+    #[test]
+    fn the_schlick_approximation_with_small_angle_and_n2_gt_n1() {
+        let shape = Sphere::glass();
+        let r = Ray::default()
+            .origin(0.0, 0.99, -2.0)
+            .direction(0.0, 0.0, 1.0);
+        let xs = Intersections::new(vec![Intersection::new(1.8589, &shape)]);
+        let xs_copy = xs.clone();
+
+        let comps = xs[0].prepare_computations(r, xs_copy);
+        let reflectance = comps.schlick();
+
+        assert!(approx_eq!(f32, reflectance, 0.4887307));
     }
 }

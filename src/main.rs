@@ -56,7 +56,8 @@ fn tick(env: Environment, proj: Projectile) -> Projectile {
 fn main() {
     let floor_material = Material::default()
         .color(Color::new(1.0, 0.9, 0.9))
-        .specular(0.0);
+        .specular(0.0)
+        .reflective(0.8);
 
     let floor = Plane::default().with_material(floor_material);
 
@@ -65,8 +66,11 @@ fn main() {
         .with_material(
             Material::default()
                 .color(Color::new(0.1, 1.0, 0.5))
-                .diffuse(0.7)
-                .specular(0.3),
+                .diffuse(0.2)
+                .ambient(0.1)
+                .specular(0.3)
+                .reflective(0.9)
+                .transparency(0.9),
         );
 
     let right = Sphere::default()

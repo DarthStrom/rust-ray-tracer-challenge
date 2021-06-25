@@ -76,19 +76,31 @@ impl World {
     pub fn shade_hit(&self, comps: Computations, remaining: u32) -> Color {
         // TODO: try multiple light sources.  It will slow things down though
         let shadowed = self.is_shadowed(comps.over_point);
+        // println!("shadowed: {}", shadowed);
 
-        let surface = comps.object.material().lighting(
+        let material = comps.object.material();
+        let surface = material.lighting(
+            comps.object,
             self.light_source,
             comps.over_point,
             comps.eyev,
             comps.normalv,
             shadowed,
         );
+        // println!("Surface: {:?}", surface);
 
         let reflected = self.reflected_color(comps, remaining);
+        // println!("Reflected: {:?}", reflected);
         let refracted = self.refracted_color(comps, remaining);
+        // println!("Refracted: {:?}", refracted);
 
-        surface + reflected + refracted
+        if material.reflective > 0.0 && material.transparency > 0.0 {
+            let reflectance = comps.schlick();
+            // println!("Reflectance: {:?}", reflectance);
+            surface + reflected * reflectance + refracted * (1.0 - reflectance)
+        } else {
+            surface + reflected + refracted
+        }
     }
 
     pub fn reflected_color(&self, comps: Computations, remaining: u32) -> Color {
@@ -350,45 +362,46 @@ mod tests {
         assert_eq!(color, color::BLACK);
     }
 
-    // TODO: are these tests bad?
+    #[test]
+    fn the_reflected_color_for_a_reflective_material() {
+        let w = World::default().object(Box::new(
+            Plane::default()
+                .with_material(Material::default().reflective(0.5))
+                .with_transform(Transform::translation(0.0, -1.0, 0.0)),
+        ));
+        let shape = w.objects[2].as_ref();
+        let r = Ray::default().origin(0.0, 0.0, -3.0).direction(
+            0.0,
+            -sqrt_n_over_n(2),
+            sqrt_n_over_n(2),
+        );
+        let i = Intersection::new(SQRT_2, shape);
 
-    // #[test]
-    // fn the_reflected_color_for_a_reflective_material() {
-    //     let mut w = World::default();
-    //     let shape = Plane::default()
-    //         .with_material(Material::default().reflective(0.5))
-    //         .with_transform(Transform::translation(0.0, -1.0, 0.0));
-    //     w.objects.push(shape.box_clone());
-    //     let r = Ray::default()
-    //         .origin(0.0, 0.0, -3.0)
-    //         .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
-    //     let i = Intersection::new(SQRT_2, &shape);
+        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let color = w.reflected_color(comps, 5);
 
-    //     let comps = i.prepare_computations(r);
-    //     let color = w.reflected_color(comps);
+        println!("{:?}", color);
+        assert_eq!(color, Color::new(0.19032, 0.2379, 0.14274));
+    }
 
-    //     println!("{:?}", color);
-    //     assert_eq!(color, Color::new(0.19032, 0.2379, 0.14274));
-    // }
+    #[test]
+    fn shade_hit_with_a_reflective_material() {
+        let mut w = World::default();
+        let shape = Plane::default()
+            .with_material(Material::default().reflective(0.5))
+            .with_transform(Transform::translation(0.0, -1.0, 0.0));
+        w.objects.push(shape.box_clone());
+        let r = Ray::default()
+            .origin(0.0, 0.0, -3.0)
+            .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
+        let i = Intersection::new(SQRT_2, &shape);
 
-    // #[test]
-    // fn shade_hit_with_a_reflective_material() {
-    //     let mut w = World::default();
-    //     let shape = Plane::default()
-    //         .with_material(Material::default().reflective(0.5))
-    //         .with_transform(Transform::translation(0.0, -1.0, 0.0));
-    //     w.objects.push(shape.box_clone());
-    //     let r = Ray::default()
-    //         .origin(0.0, 0.0, -3.0)
-    //         .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
-    //     let i = Intersection::new(SQRT_2, &shape);
+        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let color = w.shade_hit(comps, 5);
 
-    //     let comps = i.prepare_computations(r);
-    //     let color = w.shade_hit(comps);
-
-    //     println!("{:?}", color);
-    //     assert_eq!(color, Color::new(0.87677, 0.92436, 0.82918));
-    // }
+        println!("{:?}", color);
+        assert_eq!(color, Color::new(0.87677, 0.92436, 0.82918));
+    }
 
     #[test]
     fn color_at_with_mutually_reflective_surfaces() {
@@ -568,5 +581,42 @@ mod tests {
         let color = w.shade_hit(comps, 5);
 
         assert_eq!(color, Color::new(0.93642, 0.686432, 0.68642))
+    }
+
+    #[test]
+    fn shade_hit_with_a_reflective_transparent_material() {
+        let w = World::default()
+            .object(Box::new(
+                Plane::default()
+                    .with_transform(Transform::translation(0.0, -1.0, 0.0))
+                    .with_material(
+                        Material::default()
+                            .reflective(0.5)
+                            .transparency(0.5)
+                            .refractive_index(1.5),
+                    ),
+            ))
+            .object(Box::new(
+                Sphere::default()
+                    .with_material(
+                        Material::default()
+                            .color(Color::new(1.0, 0.0, 0.0))
+                            .ambient(0.5),
+                    )
+                    .with_transform(Transform::translation(0.0, -3.5, -0.5)),
+            ));
+        let floor = w.objects[2].as_ref();
+        let xs = Intersections::new(vec![Intersection::new(SQRT_2, floor)]);
+        let xs_copy = xs.clone();
+        let r = Ray::default().origin(0.0, 0.0, -3.0).direction(
+            0.0,
+            -sqrt_n_over_n(2),
+            sqrt_n_over_n(2),
+        );
+
+        let comps = xs[0].prepare_computations(r, xs_copy);
+        let color = w.shade_hit(comps, 5);
+
+        assert_eq!(color, Color::new(0.93391, 0.69643, 0.69243));
     }
 }
