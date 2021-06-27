@@ -23,6 +23,7 @@ use color::Color;
 use float_cmp::F32Margin;
 use lights::PointLight;
 use materials::Material;
+use shapes::cube::Cube;
 use shapes::plane::Plane;
 use shapes::sphere::Sphere;
 use shapes::ShapeBuilder;
@@ -73,13 +74,15 @@ fn main() {
                 .transparency(0.9),
         );
 
-    let right = Sphere::default()
+    let right = Cube::default()
         .with_transform(Transform::translation(1.5, 0.5, -0.5) * Transform::scaling(0.5, 0.5, 0.5))
         .with_material(
             Material::default()
                 .color(Color::new(0.5, 1.0, 0.1))
                 .diffuse(0.7)
-                .specular(0.3),
+                .specular(0.3)
+                .reflective(0.9)
+                .transparency(0.5),
         );
 
     let left = Sphere::default()
