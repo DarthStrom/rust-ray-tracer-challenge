@@ -79,7 +79,7 @@ impl<'a> Intersection<'a> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Intersections<'a>(Vec<Intersection<'a>>);
 
 impl<'a> Intersections<'a> {
@@ -100,6 +100,10 @@ impl<'a> Intersections<'a> {
 
     pub fn vec(self) -> Vec<Intersection<'a>> {
         self.0
+    }
+
+    pub fn push(&mut self, intersection: Intersection<'a>) {
+        self.0.push(intersection)
     }
 }
 

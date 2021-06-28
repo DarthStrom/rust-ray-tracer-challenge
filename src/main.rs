@@ -24,6 +24,7 @@ use float_cmp::F32Margin;
 use lights::PointLight;
 use materials::Material;
 use shapes::cube::Cube;
+use shapes::cylinder::Cylinder;
 use shapes::plane::Plane;
 use shapes::sphere::Sphere;
 use shapes::ShapeBuilder;
@@ -85,7 +86,7 @@ fn main() {
                 .transparency(0.5),
         );
 
-    let left = Sphere::default()
+    let left = Cylinder::default()
         .with_transform(
             Transform::translation(-1.5, 0.33, -0.75) * Transform::scaling(0.33, 0.33, 0.33),
         )
@@ -94,7 +95,8 @@ fn main() {
                 .color(Color::new(1.0, 0.8, 0.1))
                 .diffuse(0.7)
                 .specular(0.3),
-        );
+        )
+        .with_caps(-1.0, 3.0);
 
     let world = World::new(PointLight::new(
         Tuple::point(-10.0, 10.0, -10.0),
