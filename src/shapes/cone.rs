@@ -49,13 +49,12 @@ impl Cone {
     }
 
     fn local_intersect(&self, ray: Ray) -> Intersections {
-        let a =
-            ray.direction.x().powf(2.0) - ray.direction.y().powf(2.0) + ray.direction.z().powf(2.0);
+        let a = ray.direction.x().powi(2) - ray.direction.y().powi(2) + ray.direction.z().powi(2);
 
         let b = 2.0 * ray.origin.x() * ray.direction.x() - 2.0 * ray.origin.y() * ray.direction.y()
             + 2.0 * ray.origin.z() * ray.direction.z();
 
-        let c = ray.origin.x().powf(2.0) - ray.origin.y().powf(2.0) + ray.origin.z().powf(2.0);
+        let c = ray.origin.x().powi(2) - ray.origin.y().powi(2) + ray.origin.z().powi(2);
 
         if a.abs() <= MARGIN.epsilon && b.abs() <= MARGIN.epsilon {
             return self.intersect_caps(ray, Intersections::new(vec![]));
@@ -66,7 +65,7 @@ impl Cone {
             );
         }
 
-        let disc = b.powf(2.0) - 4.0 * a * c;
+        let disc = b.powi(2) - 4.0 * a * c;
 
         if disc < 0.0 {
             Intersections::new(vec![])
@@ -95,7 +94,7 @@ impl Cone {
     }
 
     fn local_normal_at(&self, point: Tuple) -> Tuple {
-        match point.x().powf(2.0) + point.z().powf(2.0) {
+        match point.x().powi(2) + point.z().powi(2) {
             dist if dist < 1.0 && point.y() >= self.maximum - MARGIN.epsilon => {
                 Tuple::vector(0.0, 1.0, 0.0)
             }
@@ -175,7 +174,7 @@ fn check_cap(ray: Ray, t: f32, y: f32) -> bool {
     let x = ray.origin.x() + t * ray.direction.x();
     let z = ray.origin.z() + t * ray.direction.z();
 
-    x.powf(2.0) + z.powf(2.0) <= y.powf(2.0)
+    x.powi(2) + z.powi(2) <= y.powi(2)
 }
 
 #[cfg(test)]

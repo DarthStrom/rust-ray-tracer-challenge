@@ -7,6 +7,7 @@ use crate::{
     shapes::{sphere::Sphere, BoxShape, Shape, ShapeBuilder},
     transformations::Transform,
     tuple::Tuple,
+    MARGIN,
 };
 
 #[derive(Debug)]
@@ -76,7 +77,6 @@ impl World {
     pub fn shade_hit(&self, comps: Computations, remaining: u32) -> Color {
         // TODO: try multiple light sources.  It will slow things down though
         let shadowed = self.is_shadowed(comps.over_point);
-        // println!("shadowed: {}", shadowed);
 
         let material = comps.object.material();
         let surface = material.lighting(
@@ -87,16 +87,12 @@ impl World {
             comps.normalv,
             shadowed,
         );
-        // println!("Surface: {:?}", surface);
 
         let reflected = self.reflected_color(comps, remaining);
-        // println!("Reflected: {:?}", reflected);
         let refracted = self.refracted_color(comps, remaining);
-        // println!("Refracted: {:?}", refracted);
 
         if material.reflective > 0.0 && material.transparency > 0.0 {
             let reflectance = comps.schlick();
-            // println!("Reflectance: {:?}", reflectance);
             surface + reflected * reflectance + refracted * (1.0 - reflectance)
         } else {
             surface + reflected + refracted
@@ -104,7 +100,7 @@ impl World {
     }
 
     pub fn reflected_color(&self, comps: Computations, remaining: u32) -> Color {
-        if comps.object.material().reflective == 0.0 || remaining == 0 {
+        if comps.object.material().reflective < MARGIN.epsilon || remaining == 0 {
             color::BLACK
         } else {
             let reflect_ray = Ray::new(comps.over_point, comps.reflectv);
@@ -115,17 +111,21 @@ impl World {
     }
 
     pub fn refracted_color(&self, comps: Computations, remaining: u32) -> Color {
-        let n_ratio = comps.n1 / comps.n2;
-        let cos_i = comps.eyev.dot(comps.normalv);
-        let sin2_t = n_ratio.powf(2.0) * (1.0 - cos_i.powf(2.0));
-
-        if comps.object.material().transparency == 0.0 || remaining == 0 || sin2_t > 1.0 {
+        if comps.object.material().transparency <= MARGIN.epsilon || remaining == 0 {
             color::BLACK
         } else {
-            let cos_t = (1.0 - sin2_t).sqrt();
-            let direction = comps.normalv * (n_ratio * cos_i - cos_t) - comps.eyev * n_ratio;
-            let refract_ray = Ray::new(comps.under_point, direction);
-            self.color_at(refract_ray, remaining - 1) * comps.object.material().transparency
+            let n_ratio = comps.n1 / comps.n2;
+            let cos_i = comps.eyev.dot(comps.normalv);
+            let sin2_t = n_ratio.powi(2) * (1.0 - cos_i.powi(2));
+
+            if sin2_t > 1.0 {
+                color::BLACK
+            } else {
+                let cos_t = (1.0 - sin2_t).sqrt();
+                let direction = comps.normalv * (n_ratio * cos_i - cos_t) - comps.eyev * n_ratio;
+                let refract_ray = Ray::new(comps.under_point, direction);
+                self.color_at(refract_ray, remaining - 1) * comps.object.material().transparency
+            }
         }
     }
 }
@@ -362,7 +362,6 @@ mod tests {
         assert_eq!(color, color::BLACK);
     }
 
-    #[ignore]
     #[test]
     fn the_reflected_color_for_a_reflective_material() {
         let w = World::default().object(Box::new(
@@ -379,13 +378,12 @@ mod tests {
         let i = Intersection::new(SQRT_2, shape);
 
         let comps = i.prepare_computations(r, Intersections::new(vec![i]));
-        let color = w.reflected_color(comps, 5);
+        let color = w.reflected_color(comps, 10);
 
         println!("{:?}", color);
         assert_eq!(color, Color::new(0.19032, 0.2379, 0.14274));
     }
 
-    #[ignore]
     #[test]
     fn shade_hit_with_a_reflective_material() {
         let mut w = World::default();
@@ -552,10 +550,8 @@ mod tests {
         assert_eq!(color, Color::new(0.0, 0.99888, 0.04725));
     }
 
-    #[ignore]
     #[test]
     fn shade_hit_with_a_transparent_material() {
-        // TODO: investigate
         let w = World::default()
             .object(Box::new(
                 Plane::default()
@@ -586,7 +582,6 @@ mod tests {
         assert_eq!(color, Color::new(0.93642, 0.686432, 0.68642))
     }
 
-    #[ignore]
     #[test]
     fn shade_hit_with_a_reflective_transparent_material() {
         let w = World::default()

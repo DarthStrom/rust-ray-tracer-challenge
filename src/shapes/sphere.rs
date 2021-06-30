@@ -94,7 +94,7 @@ fn c(ray: Ray) -> f32 {
 }
 
 fn discriminant(ray: Ray) -> f32 {
-    b(ray).powf(2.0) - 4.0 * a(ray) * c(ray)
+    b(ray).powi(2) - 4.0 * a(ray) * c(ray)
 }
 
 #[cfg(test)]
