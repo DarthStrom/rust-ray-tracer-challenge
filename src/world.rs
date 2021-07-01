@@ -1,19 +1,19 @@
 use crate::{
     color::{self, Color},
-    intersection::{Computations, Intersection, Intersections},
+    intersection::{Computations, Intersection},
     lights::PointLight,
     materials::Material,
     ray::Ray,
-    shapes::{sphere::Sphere, BoxShape, Shape, ShapeBuilder},
+    shapes::{sphere::Sphere, Shape, ShapeBuilder},
     transformations::Transform,
     tuple::Tuple,
-    MARGIN,
+    EPSILON,
 };
 
 #[derive(Debug)]
 pub struct World {
     light_source: PointLight,
-    objects: Vec<BoxShape>,
+    objects: Vec<Box<dyn Shape>>,
 }
 
 impl World {
@@ -40,23 +40,23 @@ impl World {
 
     pub fn color_at(&self, ray: Ray, remaining: u32) -> Color {
         let intersections = self.intersect(ray);
-        if let Some(hit) = intersections.clone().hit() {
-            let comps = hit.prepare_computations(ray, intersections);
+        if let Some(hit) = Intersection::hit(&intersections) {
+            let comps = hit.prepare_computations(ray, &intersections);
             self.shade_hit(comps, remaining)
         } else {
             color::BLACK
         }
     }
 
-    pub fn intersect(&self, ray: Ray) -> Intersections {
+    pub fn intersect(&self, ray: Ray) -> Vec<Intersection> {
         let mut vec = self
             .objects
             .iter()
-            .flat_map(|o| o.intersect(ray).vec())
+            .flat_map(|o| o.intersect(ray))
             .collect::<Vec<Intersection>>();
 
         vec.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
-        Intersections::new(vec)
+        vec
     }
 
     pub fn is_shadowed(&self, point: Tuple) -> bool {
@@ -67,7 +67,7 @@ impl World {
         let r = Ray::new(point, direction);
         let intersections = self.intersect(r);
 
-        if let Some(h) = intersections.hit() {
+        if let Some(h) = Intersection::hit(&intersections) {
             h.t < distance
         } else {
             false
@@ -100,7 +100,7 @@ impl World {
     }
 
     pub fn reflected_color(&self, comps: Computations, remaining: u32) -> Color {
-        if comps.object.material().reflective < MARGIN.epsilon || remaining == 0 {
+        if comps.object.material().reflective < EPSILON || remaining == 0 {
             color::BLACK
         } else {
             let reflect_ray = Ray::new(comps.over_point, comps.reflectv);
@@ -111,7 +111,7 @@ impl World {
     }
 
     pub fn refracted_color(&self, comps: Computations, remaining: u32) -> Color {
-        if comps.object.material().transparency <= MARGIN.epsilon || remaining == 0 {
+        if comps.object.material().transparency <= EPSILON || remaining == 0 {
             color::BLACK
         } else {
             let n_ratio = comps.n1 / comps.n2;
@@ -153,10 +153,8 @@ impl Default for World {
 mod tests {
     use std::f32::consts::SQRT_2;
 
-    use float_cmp::approx_eq;
-
     use crate::{
-        color,
+        color, float_eq,
         patterns::TestPattern,
         shapes::{plane::Plane, ShapeBuilder},
         test::sqrt_n_over_n,
@@ -199,10 +197,10 @@ mod tests {
         let xs = w.intersect(r);
 
         assert_eq!(xs.len(), 4);
-        assert!(approx_eq!(f32, xs[0].t, 4.0));
-        assert!(approx_eq!(f32, xs[1].t, 4.5));
-        assert!(approx_eq!(f32, xs[2].t, 5.5));
-        assert!(approx_eq!(f32, xs[3].t, 6.0));
+        assert!(float_eq(xs[0].t, 4.0));
+        assert!(float_eq(xs[1].t, 4.5));
+        assert!(float_eq(xs[2].t, 5.5));
+        assert!(float_eq(xs[3].t, 6.0));
     }
 
     #[test]
@@ -212,7 +210,7 @@ mod tests {
         let shape = w.objects[0].as_ref();
         let i = Intersection::new(4.0, shape);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
         let c = w.shade_hit(comps, 3);
 
         assert_eq!(c, Color::new(0.38066, 0.47583, 0.2855));
@@ -228,7 +226,7 @@ mod tests {
         let shape = w.objects[1].as_ref();
         let i = Intersection::new(0.5, shape);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
         let c = w.shade_hit(comps, 3);
 
         assert_eq!(c, Color::new(0.90498, 0.90498, 0.90498));
@@ -277,7 +275,7 @@ mod tests {
 
         let c = w.color_at(r, 3);
 
-        assert_eq!(c, inner.material.color);
+        assert_eq!(c, inner.material().color);
     }
 
     #[test]
@@ -328,7 +326,7 @@ mod tests {
             .direction(0.0, 0.0, 1.0);
         let i = Intersection::new(4.0, w.objects[1].as_ref());
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
         let c = w.shade_hit(comps, 3);
 
         assert_eq!(c, Color::new(0.1, 0.1, 0.1));
@@ -356,7 +354,7 @@ mod tests {
             .direction(0.0, 0.0, 1.0);
         let i = Intersection::new(1.0, &sphere2);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
         let color = w.reflected_color(comps, 3);
 
         assert_eq!(color, color::BLACK);
@@ -377,10 +375,9 @@ mod tests {
         );
         let i = Intersection::new(SQRT_2, shape);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
         let color = w.reflected_color(comps, 10);
 
-        println!("{:?}", color);
         assert_eq!(color, Color::new(0.19032, 0.2379, 0.14274));
     }
 
@@ -390,16 +387,15 @@ mod tests {
         let shape = Plane::default()
             .with_material(Material::default().reflective(0.5))
             .with_transform(Transform::translation(0.0, -1.0, 0.0));
-        w.objects.push(shape.box_clone());
+        w.objects.push(Box::new(shape.clone()));
         let r = Ray::default()
             .origin(0.0, 0.0, -3.0)
             .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
         let i = Intersection::new(SQRT_2, &shape);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
         let color = w.shade_hit(comps, 5);
 
-        println!("{:?}", color);
         assert_eq!(color, Color::new(0.87677, 0.92436, 0.82918));
     }
 
@@ -430,13 +426,9 @@ mod tests {
         let r = Ray::default()
             .origin(0.0, 0.0, -5.0)
             .direction(0.0, 0.0, 1.0);
-        let xs = Intersections::new(vec![
-            Intersection::new(4.0, shape),
-            Intersection::new(6.0, shape),
-        ]);
-        let xs_copy = xs.clone();
+        let xs = vec![Intersection::new(4.0, shape), Intersection::new(6.0, shape)];
 
-        let comps = xs[0].prepare_computations(r, xs_copy);
+        let comps = xs[0].prepare_computations(r, &xs);
         let c = w.refracted_color(comps, 5);
 
         assert_eq!(c, color::BLACK);
@@ -465,13 +457,9 @@ mod tests {
             .origin(0.0, 0.0, -5.0)
             .direction(0.0, 0.0, 1.0);
         let shape = w.objects[0].as_ref();
-        let xs = Intersections::new(vec![
-            Intersection::new(4.0, shape),
-            Intersection::new(6.0, shape),
-        ]);
-        let xs_copy = xs.clone();
+        let xs = vec![Intersection::new(4.0, shape), Intersection::new(6.0, shape)];
 
-        let comps = xs[0].prepare_computations(r, xs_copy);
+        let comps = xs[0].prepare_computations(r, &xs);
         let c = w.refracted_color(comps, 0);
 
         assert_eq!(c, color::BLACK);
@@ -500,13 +488,12 @@ mod tests {
             .origin(0.0, 0.0, sqrt_n_over_n(2))
             .direction(0.0, 1.0, 0.0);
         let shape = w.objects[0].as_ref();
-        let xs = Intersections::new(vec![
+        let xs = vec![
             Intersection::new(-sqrt_n_over_n(2), shape),
             Intersection::new(sqrt_n_over_n(2), shape),
-        ]);
-        let xs_copy = xs.clone();
+        ];
 
-        let comps = xs[1].prepare_computations(r, xs_copy);
+        let comps = xs[1].prepare_computations(r, &xs);
         let c = w.refracted_color(comps, 5);
 
         assert_eq!(c, color::BLACK);
@@ -536,15 +523,14 @@ mod tests {
             .direction(0.0, 1.0, 0.0);
         let a = w.objects[0].as_ref();
         let b = w.objects[1].as_ref();
-        let xs = Intersections::new(vec![
+        let xs = vec![
             Intersection::new(-0.9899, a),
             Intersection::new(-0.4899, b),
             Intersection::new(0.4899, b),
             Intersection::new(0.9899, a),
-        ]);
-        let xs_copy = xs.clone();
+        ];
 
-        let comps = xs[2].prepare_computations(r, xs_copy);
+        let comps = xs[2].prepare_computations(r, &xs);
         let color = w.refracted_color(comps, 5);
 
         assert_eq!(color, Color::new(0.0, 0.99888, 0.04725));
@@ -573,10 +559,9 @@ mod tests {
             sqrt_n_over_n(2),
         );
         let floor = w.objects[0].as_ref();
-        let xs = Intersections::new(vec![Intersection::new(SQRT_2, floor)]);
-        let xs_copy = xs.clone();
+        let xs = vec![Intersection::new(SQRT_2, floor)];
 
-        let comps = xs[0].prepare_computations(r, xs_copy);
+        let comps = xs[0].prepare_computations(r, &xs);
         let color = w.shade_hit(comps, 5);
 
         assert_eq!(color, Color::new(0.93642, 0.686432, 0.68642))
@@ -605,15 +590,14 @@ mod tests {
                     .with_transform(Transform::translation(0.0, -3.5, -0.5)),
             ));
         let floor = w.objects[2].as_ref();
-        let xs = Intersections::new(vec![Intersection::new(SQRT_2, floor)]);
-        let xs_copy = xs.clone();
+        let xs = vec![Intersection::new(SQRT_2, floor)];
         let r = Ray::default().origin(0.0, 0.0, -3.0).direction(
             0.0,
             -sqrt_n_over_n(2),
             sqrt_n_over_n(2),
         );
 
-        let comps = xs[0].prepare_computations(r, xs_copy);
+        let comps = xs[0].prepare_computations(r, &xs);
         let color = w.shade_hit(comps, 5);
 
         assert_eq!(color, Color::new(0.93391, 0.69643, 0.69243));

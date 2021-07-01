@@ -1,50 +1,21 @@
+use uuid::Uuid;
+
 use crate::{
-    intersection::{Intersection, Intersections},
+    intersection::Intersection,
     materials::Material,
     ray::Ray,
     shapes::{Shape, ShapeBuilder},
     transformations::Transform,
     tuple::Tuple,
-    MARGIN,
+    EPSILON,
 };
 use std::{cmp::Ordering::Equal, f32::MAX};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Cube {
+    id: Uuid,
     material: Material,
     transform: Transform,
-}
-
-impl Cube {
-    fn local_intersect(&self, ray: Ray) -> Intersections {
-        let (xtmin, xtmax) = check_axis(ray.origin.x(), ray.direction.x());
-        let (ytmin, ytmax) = check_axis(ray.origin.y(), ray.direction.y());
-        let (ztmin, ztmax) = check_axis(ray.origin.z(), ray.direction.z());
-
-        let tmin = max(&[xtmin, ytmin, ztmin]);
-        let tmax = min(&[xtmax, ytmax, ztmax]);
-
-        if tmin > tmax {
-            return Intersections::new(vec![]);
-        }
-
-        Intersections::new(vec![Intersection::new(tmin, self), Intersection::new(tmax, self)])
-    }
-
-    fn local_normal_at(&self, point: Tuple) -> Tuple {
-        let abs_x = point.x().abs();
-        let abs_y = point.y().abs();
-        let abs_z = point.z().abs();
-
-        let maxc = max(&[abs_x, abs_y, abs_z]);
-
-        match maxc {
-            _ if maxc == abs_x => Tuple::vector(point.x(), 0.0, 0.0),
-            _ if maxc == abs_y => Tuple::vector(0.0, point.y(), 0.0),
-            _ if maxc == abs_z => Tuple::vector(0.0, 0.0, point.z()),
-            _ => panic!(),
-        }
-    }
 }
 
 fn sorted(nums: &[f32]) -> Vec<f32> {
@@ -65,8 +36,8 @@ fn check_axis(origin: f32, direction: f32) -> (f32, f32) {
     let tmin_numerator = -1.0 - origin;
     let tmax_numerator = 1.0 - origin;
 
-    let (tmin, tmax) = if direction.abs() >= MARGIN.epsilon {
-      (tmin_numerator / direction, tmax_numerator / direction)
+    let (tmin, tmax) = if direction.abs() >= EPSILON {
+        (tmin_numerator / direction, tmax_numerator / direction)
     } else {
         (tmin_numerator * MAX, tmax_numerator * MAX)
     };
@@ -89,56 +60,78 @@ impl ShapeBuilder for Cube {
 }
 
 impl Shape for Cube {
-    fn box_clone(&self) -> crate::shapes::BoxShape {
-        Box::new((*self).clone())
-    }
-
-    fn box_eq(&self, other: &dyn std::any::Any) -> bool {
-        other.downcast_ref::<Self>().map_or(false, |a| self == a)
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn material(&self) -> &Material {
-        &self.material
+    fn id(&self) -> uuid::Uuid {
+        self.id
     }
 
     fn transform(&self) -> &Transform {
         &self.transform
     }
 
-    fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple {
-        let world_point = Tuple::point(x, y, z);
-        let obj_point = self.transform().inverse() * world_point;
-        let object_normal = self.local_normal_at(obj_point);
-        let mut world_normal = self.transform.inverse().transpose() * object_normal;
-        world_normal = world_normal.to_vector();
-        world_normal.normalize()
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform
     }
 
-    fn intersect(&self, ray: Ray) -> Intersections {
-        let local_ray = ray.transform(self.transform().inverse());
-        self.local_intersect(local_ray)
+    fn material(&self) -> &Material {
+        &self.material
+    }
+
+    fn material_mut(&mut self) -> &mut Material {
+        &mut self.material
+    }
+
+    fn set_material(&mut self, material: Material) {
+        self.material = material;
+    }
+
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+        let (xtmin, xtmax) = check_axis(ray.origin.x(), ray.direction.x());
+        let (ytmin, ytmax) = check_axis(ray.origin.y(), ray.direction.y());
+        let (ztmin, ztmax) = check_axis(ray.origin.z(), ray.direction.z());
+
+        let tmin = max(&[xtmin, ytmin, ztmin]);
+        let tmax = min(&[xtmax, ytmax, ztmax]);
+
+        if tmin > tmax {
+            return vec![];
+        }
+
+        vec![Intersection::new(tmin, self), Intersection::new(tmax, self)]
+    }
+
+    fn local_normal_at(&self, point: Tuple) -> Tuple {
+        let abs_x = point.x().abs();
+        let abs_y = point.y().abs();
+        let abs_z = point.z().abs();
+
+        let maxc = max(&[abs_x, abs_y, abs_z]);
+
+        match maxc {
+            _ if maxc == abs_x => Tuple::vector(point.x(), 0.0, 0.0),
+            _ if maxc == abs_y => Tuple::vector(0.0, point.y(), 0.0),
+            _ if maxc == abs_z => Tuple::vector(0.0, 0.0, point.z()),
+            _ => panic!(),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use float_cmp::approx_eq;
+    use crate::float_eq;
 
     use super::*;
 
     #[test]
     fn a_ray_intersects_a_cube() {
         let c = Cube::default();
-        let r = Ray::default().origin(5.0, 0.5, 0.0).direction(-1.0, 0.0, 0.0);
+        let r = Ray::default()
+            .origin(5.0, 0.5, 0.0)
+            .direction(-1.0, 0.0, 0.0);
         let xs = c.local_intersect(r);
-        
+
         assert_eq!(xs.len(), 2);
-        assert!(approx_eq!(f32, xs[0].t, 4.0));
-        assert!(approx_eq!(f32, xs[1].t, 6.0));
+        assert!(float_eq(xs[0].t, 4.0));
+        assert!(float_eq(xs[1].t, 6.0));
     }
 
     macro_rules! a_ray_intersects_a_cube {
@@ -152,8 +145,8 @@ mod tests {
                 let xs = c.local_intersect(r);
 
                 assert_eq!(xs.len(), 2);
-                assert!(approx_eq!(f32, xs[0].t, t1));
-                assert!(approx_eq!(f32, xs[1].t, t2));
+                assert!(float_eq(xs[0].t, t1));
+                assert!(float_eq(xs[1].t, t2));
             }
         )*
         }
@@ -201,7 +194,7 @@ mod tests {
             fn $name() {
                 let (point, expected_normal) = $value;
                 let c = Cube::default();
-                
+
                 let actual_normal = c.local_normal_at(point);
 
                 assert_eq!(actual_normal, expected_normal);

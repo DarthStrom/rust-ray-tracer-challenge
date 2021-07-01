@@ -92,9 +92,7 @@ impl Camera {
 mod tests {
     use std::f32::consts::{PI, SQRT_2};
 
-    use float_cmp::approx_eq;
-
-    use crate::color::Color;
+    use crate::{color::Color, float_eq};
 
     use super::*;
 
@@ -108,7 +106,7 @@ mod tests {
 
         assert_eq!(c.hsize, 160);
         assert_eq!(c.vsize, 120);
-        assert!(approx_eq!(f32, c.field_of_view, PI / 2.0));
+        assert!(float_eq(c.field_of_view, PI / 2.0));
         assert_eq!(c.transform, transformations::IDENTITY);
     }
 
@@ -116,14 +114,14 @@ mod tests {
     fn pixel_size_for_a_horizontal_canvas() {
         let c = Camera::new(200, 125, PI / 2.0);
 
-        assert!(approx_eq!(f32, c.pixel_size(), 0.01));
+        assert!(float_eq(c.pixel_size(), 0.01));
     }
 
     #[test]
     fn pixel_size_for_a_vertical_canvas() {
         let c = Camera::new(125, 200, PI / 2.0);
 
-        assert!(approx_eq!(f32, c.pixel_size(), 0.01));
+        assert!(float_eq(c.pixel_size(), 0.01));
     }
 
     #[test]

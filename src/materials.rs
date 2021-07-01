@@ -130,21 +130,19 @@ fn light_behind_surface(light_dot_normal: f32) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::{patterns::striped::Striped, shapes::sphere::Sphere, test::*};
+    use crate::{float_eq, patterns::striped::Striped, shapes::sphere::Sphere, test::*};
 
     use super::*;
-
-    use float_cmp::approx_eq;
 
     #[test]
     fn default() {
         let m = Material::default();
 
         assert_eq!(m.color, Color::new(1.0, 1.0, 1.0));
-        assert!(approx_eq!(f32, m.ambient, 0.1));
-        assert!(approx_eq!(f32, m.diffuse, 0.9));
-        assert!(approx_eq!(f32, m.specular, 0.9));
-        assert!(approx_eq!(f32, m.shininess, 200.0));
+        assert!(float_eq(m.ambient, 0.1));
+        assert!(float_eq(m.diffuse, 0.9));
+        assert!(float_eq(m.specular, 0.9));
+        assert!(float_eq(m.shininess, 200.0));
     }
 
     #[test]
@@ -267,7 +265,7 @@ mod tests {
     fn reflectivity_for_the_default_material() {
         let (m, _) = shared_setup();
 
-        assert!(approx_eq!(f32, m.reflective, 0.0));
+        assert!(float_eq(m.reflective, 0.0));
     }
 
     fn shared_setup() -> (Material, Tuple) {
@@ -278,7 +276,7 @@ mod tests {
     fn transparency_and_refractive_index_for_the_default_material() {
         let m = Material::default();
 
-        assert!(approx_eq!(f32, m.transparency, 0.0));
-        assert!(approx_eq!(f32, m.refractive_index, 1.0));
+        assert!(float_eq(m.transparency, 0.0));
+        assert!(float_eq(m.refractive_index, 1.0));
     }
 }

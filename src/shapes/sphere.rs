@@ -1,23 +1,34 @@
+use uuid::Uuid;
+
 use crate::{
-    intersection::{Intersection, Intersections},
+    intersection::Intersection,
     materials::Material,
     ray::Ray,
     shapes::{Shape, ShapeBuilder},
-    transformations::Transform,
+    transformations::{Transform, IDENTITY},
     tuple::Tuple,
 };
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sphere {
-    pub center: Tuple,
-    pub radius: f32,
-    pub transform: Transform,
-    pub material: Material,
+    id: Uuid,
+    transform: Transform,
+    material: Material,
 }
 
 impl Sphere {
     pub fn glass() -> Self {
         Self::default().with_material(Material::default().transparency(1.0).refractive_index(1.5))
+    }
+}
+
+impl Default for Sphere {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            transform: IDENTITY,
+            material: Material::default(),
+        }
     }
 }
 
@@ -32,41 +43,35 @@ impl ShapeBuilder for Sphere {
 }
 
 impl Shape for Sphere {
-    fn box_clone(&self) -> crate::shapes::BoxShape {
-        Box::new((*self).clone())
-    }
-
-    fn box_eq(&self, other: &dyn std::any::Any) -> bool {
-        other.downcast_ref::<Self>().map_or(false, |a| self == a)
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn material(&self) -> &Material {
-        &self.material
+    fn id(&self) -> uuid::Uuid {
+        self.id
     }
 
     fn transform(&self) -> &Transform {
         &self.transform
     }
 
-    fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple {
-        let world_point = Tuple::point(x, y, z);
-        let object_point = self.transform.inverse() * world_point;
-        let object_normal = object_point - Tuple::point(0.0, 0.0, 0.0);
-        let mut world_normal = self.transform.inverse().transpose() * object_normal;
-        world_normal = world_normal.to_vector();
-        world_normal.normalize()
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
     }
 
-    fn intersect(&self, ray: Ray) -> Intersections {
-        let ray = ray.transform(self.transform.inverse());
+    fn material(&self) -> &Material {
+        &self.material
+    }
+
+    fn material_mut(&mut self) -> &mut Material {
+        &mut self.material
+    }
+
+    fn set_material(&mut self, material: Material) {
+        self.material = material;
+    }
+
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
         let discriminant = discriminant(ray);
 
         if discriminant < 0.0 {
-            Intersections::new(vec![])
+            vec![]
         } else {
             let a = a(ray);
             let b = b(ray);
@@ -74,8 +79,12 @@ impl Shape for Sphere {
             let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
             let i1 = Intersection::new(t1, self);
             let i2 = Intersection::new(t2, self);
-            Intersections::new(vec![i1, i2])
+            vec![i1, i2]
         }
+    }
+
+    fn local_normal_at(&self, point: Tuple) -> Tuple {
+        point - Tuple::point(0.0, 0.0, 0.0)
     }
 }
 
@@ -99,9 +108,8 @@ fn discriminant(ray: Ray) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use float_cmp::approx_eq;
-
     use crate::{
+        float_eq,
         test::*,
         transformations::{self, IDENTITY},
     };
@@ -135,8 +143,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert!(approx_eq!(f32, xs[0].t, 4.0));
-        assert!(approx_eq!(f32, xs[1].t, 6.0));
+        assert!(float_eq(xs[0].t, 4.0));
+        assert!(float_eq(xs[1].t, 6.0));
     }
 
     #[test]
@@ -147,8 +155,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert!(approx_eq!(f32, xs[0].t, 5.0));
-        assert!(approx_eq!(f32, xs[1].t, 5.0));
+        assert!(float_eq(xs[0].t, 5.0));
+        assert!(float_eq(xs[1].t, 5.0));
     }
 
     #[test]
@@ -168,8 +176,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert!(approx_eq!(f32, xs[0].t, -1.0));
-        assert!(approx_eq!(f32, xs[1].t, 1.0));
+        assert!(float_eq(xs[0].t, -1.0));
+        assert!(float_eq(xs[1].t, 1.0));
     }
 
     #[test]
@@ -180,8 +188,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert!(approx_eq!(f32, xs[0].t, -6.0));
-        assert!(approx_eq!(f32, xs[1].t, -4.0));
+        assert!(float_eq(xs[0].t, -6.0));
+        assert!(float_eq(xs[1].t, -4.0));
     }
 
     #[test]
@@ -207,8 +215,8 @@ mod tests {
         let xs = s.intersect(r);
 
         assert_eq!(xs.len(), 2);
-        assert!(approx_eq!(f32, xs[0].t, 3.0));
-        assert!(approx_eq!(f32, xs[1].t, 7.0));
+        assert!(float_eq(xs[0].t, 3.0));
+        assert!(float_eq(xs[1].t, 7.0));
     }
 
     #[test]
@@ -262,11 +270,8 @@ mod tests {
     #[test]
     fn normal_on_a_translated_sphere() {
         let s = Sphere::default().with_transform(Transform::translation(0.0, 1.0, 0.0));
-
         let n = s.normal_at(0.0, 1.0 + FRAC_1_SQRT_2, -FRAC_1_SQRT_2);
 
-        println!("n: {:?}", n);
-        println!("v: {:?}", Tuple::vector(0.0, FRAC_1_SQRT_2, -FRAC_1_SQRT_2));
         assert_eq!(n, Tuple::vector(0.0, FRAC_1_SQRT_2, -FRAC_1_SQRT_2));
     }
 
@@ -285,7 +290,7 @@ mod tests {
         let s = Sphere::glass();
 
         assert_eq!(s.transform, transformations::IDENTITY);
-        assert!(approx_eq!(f32, s.material.transparency, 1.0));
-        assert!(approx_eq!(f32, s.material.refractive_index, 1.5));
+        assert!(float_eq(s.material.transparency, 1.0));
+        assert!(float_eq(s.material.refractive_index, 1.5));
     }
 }

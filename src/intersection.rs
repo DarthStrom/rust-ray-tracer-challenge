@@ -1,6 +1,6 @@
-use std::{iter::FromIterator, ops::Index};
+use std::cmp::Ordering;
 
-use crate::{ray::Ray, shapes::Shape, tuple::Tuple, MARGIN};
+use crate::{float_cmp, ray::Ray, shapes::Shape, tuple::Tuple, EPSILON};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Intersection<'a> {
@@ -8,20 +8,12 @@ pub struct Intersection<'a> {
     object: &'a dyn Shape,
 }
 
-impl<'a> PartialEq for Intersection<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.t == other.t
-            && self.object.material() == other.object.material()
-            && self.object.transform() == other.object.transform()
-    }
-}
-
 impl<'a> Intersection<'a> {
     pub fn new(t: f32, object: &'a dyn Shape) -> Self {
         Self { t, object }
     }
 
-    pub fn prepare_computations(&self, ray: Ray, intersections: Intersections) -> Computations {
+    pub fn prepare_computations(&self, ray: Ray, intersections: &[Intersection]) -> Computations {
         let point = ray.position(self.t);
         let eyev = -ray.direction;
         let mut normalv = self.object.normal_at(point.x(), point.y(), point.z());
@@ -36,7 +28,7 @@ impl<'a> Intersection<'a> {
         let mut n2 = 0.0;
         let mut containers: Vec<&dyn Shape> = vec![];
         for intersection in intersections {
-            if &intersection == self {
+            if intersection == self {
                 if containers.is_empty() {
                     n1 = 1.0
                 } else {
@@ -44,7 +36,7 @@ impl<'a> Intersection<'a> {
                 }
             }
 
-            if containers.iter().any(|s| s == &intersection.object) {
+            if containers.contains(&intersection.object) {
                 containers = containers
                     .into_iter()
                     .filter(|&s| s != intersection.object)
@@ -53,7 +45,7 @@ impl<'a> Intersection<'a> {
                 containers.push(intersection.object);
             }
 
-            if &intersection == self {
+            if intersection == self {
                 if containers.is_empty() {
                     n2 = 1.0
                 } else {
@@ -67,8 +59,8 @@ impl<'a> Intersection<'a> {
             t: self.t,
             object: self.object,
             point,
-            over_point: point + normalv * MARGIN.epsilon,
-            under_point: point - normalv * MARGIN.epsilon,
+            over_point: point + normalv * EPSILON,
+            under_point: point - normalv * EPSILON,
             eyev,
             normalv,
             reflectv,
@@ -79,58 +71,29 @@ impl<'a> Intersection<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Intersections<'a>(Vec<Intersection<'a>>);
-
-impl<'a> Intersections<'a> {
-    pub fn new(vec: Vec<Intersection<'a>>) -> Self {
-        Self(vec)
-    }
-
-    pub fn hit(&self) -> Option<&Intersection> {
-        self.0
-            .iter()
-            .filter(|i| i.t >= 0.0)
-            .min_by(|i1, i2| i1.t.partial_cmp(&i2.t).unwrap())
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn vec(self) -> Vec<Intersection<'a>> {
-        self.0
-    }
-
-    pub fn push(&mut self, intersection: Intersection<'a>) {
-        self.0.push(intersection)
+impl Intersection<'_> {
+    pub fn hit<'a>(xs: &'a [Intersection]) -> Option<&'a Intersection<'a>> {
+        xs.iter().filter(|x| x.t >= 0.0).min()
     }
 }
 
-impl<'a> Index<usize> for Intersections<'a> {
-    type Output = Intersection<'a>;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
+impl PartialEq for Intersection<'_> {
+    fn eq(&self, other: &Intersection) -> bool {
+        self.t == other.t && self.object.shape_eq(other.object)
     }
 }
 
-impl<'a> FromIterator<Intersection<'a>> for Intersections<'a> {
-    fn from_iter<T: IntoIterator<Item = Intersection<'a>>>(iter: T) -> Self {
-        let mut result = Self(vec![]);
-        for i in iter {
-            result.0.push(i);
-        }
-        result
+impl PartialOrd for Intersection<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(float_cmp(self.t, other.t))
     }
 }
 
-impl<'a> IntoIterator for Intersections<'a> {
-    type Item = Intersection<'a>;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
+impl Eq for Intersection<'_> {}
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+impl Ord for Intersection<'_> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        float_cmp(self.t, other.t)
     }
 }
 
@@ -175,6 +138,7 @@ mod tests {
     use std::f32::consts::SQRT_2;
 
     use crate::{
+        float_eq,
         materials::Material,
         shapes::ShapeBuilder,
         shapes::{plane::Plane, sphere::Sphere},
@@ -183,8 +147,6 @@ mod tests {
     };
 
     use super::*;
-
-    use float_cmp::approx_eq;
 
     #[test]
     fn aggregating_intersections() {
@@ -195,8 +157,8 @@ mod tests {
         let xs = vec![i1, i2];
 
         assert_eq!(xs.len(), 2);
-        assert!(approx_eq!(f32, xs[0].t, 1.0));
-        assert!(approx_eq!(f32, xs[1].t, 2.0));
+        assert!(float_eq(xs[0].t, 1.0));
+        assert!(float_eq(xs[1].t, 2.0));
     }
 
     #[test]
@@ -204,11 +166,11 @@ mod tests {
         let s = Sphere::default();
         let i1 = Intersection::new(1.0, &s);
         let i2 = Intersection::new(2.0, &s);
-        let xs = Intersections::new(vec![i2, i1]);
+        let xs = vec![i2, i1];
 
-        let i = xs.hit();
+        let i = Intersection::hit(&xs);
 
-        assert!(approx_eq!(f32, i.unwrap().t, i1.t));
+        assert!(float_eq(i.unwrap().t, i1.t));
     }
 
     #[test]
@@ -216,11 +178,11 @@ mod tests {
         let s = Sphere::default();
         let i1 = Intersection::new(-1.0, &s);
         let i2 = Intersection::new(1.0, &s);
-        let xs = Intersections::new(vec![i2, i1]);
+        let xs = vec![i2, i1];
 
-        let i = xs.hit();
+        let i = Intersection::hit(&xs);
 
-        assert!(approx_eq!(f32, i.unwrap().t, i2.t));
+        assert!(float_eq(i.unwrap().t, i2.t));
     }
 
     #[test]
@@ -228,9 +190,9 @@ mod tests {
         let s = Sphere::default();
         let i1 = Intersection::new(-2.0, &s);
         let i2 = Intersection::new(-1.0, &s);
-        let xs = Intersections::new(vec![i2, i1]);
+        let xs = vec![i2, i1];
 
-        let i = xs.hit();
+        let i = Intersection::hit(&xs);
 
         assert!(i.is_none());
     }
@@ -242,11 +204,11 @@ mod tests {
         let i2 = Intersection::new(7.0, &s);
         let i3 = Intersection::new(-3.0, &s);
         let i4 = Intersection::new(2.0, &s);
-        let xs = Intersections::new(vec![i1, i2, i3, i4]);
+        let xs = vec![i1, i2, i3, i4];
 
-        let i = xs.hit();
+        let i = Intersection::hit(&xs);
 
-        assert!(approx_eq!(f32, i.unwrap().t, i4.t));
+        assert!(float_eq(i.unwrap().t, i4.t));
     }
 
     #[test]
@@ -255,9 +217,9 @@ mod tests {
         let shape = Sphere::default();
         let i = Intersection::new(4.0, &shape);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
 
-        assert!(approx_eq!(f32, comps.t, i.t));
+        assert!(float_eq(comps.t, i.t));
         assert_eq!(comps.point, Tuple::point(0.0, 0.0, -1.0));
         assert_eq!(comps.eyev, Tuple::vector(0.0, 0.0, -1.0));
         assert!(!comps.inside);
@@ -270,44 +232,13 @@ mod tests {
         let shape = Sphere::default();
         let i = Intersection::new(1.0, &shape);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
 
         assert_eq!(comps.point, Tuple::point(0.0, 0.0, 1.0));
         assert_eq!(comps.eyev, Tuple::vector(0.0, 0.0, -1.0));
         assert!(comps.inside);
         assert_eq!(comps.normalv, Tuple::vector(0.0, 0.0, -1.0));
     }
-
-    // #[test]
-    // fn shading_an_intersection() {
-    //     let w = World::default();
-    //     let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    //     let i = Intersection::new(4.0, w.objects[0].clone());
-
-    //     let comps = i.prepare_computations(r).unwrap();
-    //     let c = w.shade_hit(comps);
-
-    //     f_assert_eq!(c, &Color::new(0.38066, 0.47583, 0.2855));
-    // }
-
-    // #[test]
-    // fn shading_an_intersection_from_the_inside() {
-    //     let w = World {
-    //         light_sources: vec![PointLight::new(
-    //             Tuple::point(0.0, 0.25, 0.0),
-    //             Color::new(1.0, 1.0, 1.0),
-    //         )],
-    //         ..Default::default()
-    //     };
-    //     let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
-    //     let shape = w.objects[1].clone();
-    //     let i = Intersection::new(0.5, shape);
-
-    //     let comps = i.prepare_computations(r).unwrap();
-    //     let c = w.shade_hit(comps);
-
-    //     f_assert_eq!(c, &Color::new(0.90498, 0.90498, 0.90498));
-    // }
 
     #[test]
     fn the_hit_should_offset_the_point() {
@@ -317,9 +248,9 @@ mod tests {
         let shape = Sphere::default().with_transform(Transform::translation(0.0, 0.0, 1.0));
         let i = Intersection::new(5.0, &shape);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
 
-        assert!(comps.over_point.z() < -MARGIN.epsilon / 2.0);
+        assert!(comps.over_point.z() < -EPSILON / 2.0);
         assert!(comps.point.z() > comps.over_point.z());
     }
 
@@ -331,7 +262,7 @@ mod tests {
             .direction(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0);
         let i = Intersection::new(SQRT_2, &shape);
 
-        let comps = i.prepare_computations(r, Intersections::new(vec![i]));
+        let comps = i.prepare_computations(r, &[i]);
 
         assert_eq!(
             comps.reflectv,
@@ -345,24 +276,23 @@ mod tests {
             #[test]
             fn $name() {
                 let (index, n1, n2) = $value;
-                let a = Sphere::glass().with_transform(Transform::scaling(2., 2., 2.)).with_material(Material::default().refractive_index(1.5));
-                let b = Sphere::glass().with_transform(Transform::translation(0., 0., -0.25)).with_material(Material::default().refractive_index(2.0));
-                let c = Sphere::glass().with_transform(Transform::translation(0., 0., 0.25)).with_material(Material::default().refractive_index(2.5));
-                let r = Ray::default().origin(0., 0., -4.).direction(0., 0., 1.0);
-                let xs = Intersections::new(vec![
+                let a = Sphere::glass().with_transform(Transform::scaling(2.0, 2.0, 2.0)).with_material(Material::default().refractive_index(1.5));
+                let b = Sphere::glass().with_transform(Transform::translation(0.0, 0.0, -0.25)).with_material(Material::default().refractive_index(2.0));
+                let c = Sphere::glass().with_transform(Transform::translation(0.0, 0.0, 0.25)).with_material(Material::default().refractive_index(2.5));
+                let r = Ray::default().origin(0.0, 0.0, -4.0).direction(0.0, 0.0, 1.0);
+                let xs = &[
                     Intersection::new(2.0, &a),
                     Intersection::new(2.75, &b),
                     Intersection::new(3.25, &c),
                     Intersection::new(4.75, &b),
-                    Intersection::new(5.25, &c),
+                    Intersection::new(5.35, &c),
                     Intersection::new(6.0, &a),
-                    ]);
+                    ];
 
-                let xs_copy = xs.clone();
-                let comps = xs_copy[index].prepare_computations(r, xs);
+                let comps = xs[index].prepare_computations(r, xs);
 
-                assert!(approx_eq!(f32, comps.n1, n1));
-                assert!(approx_eq!(f32, comps.n2, n2));
+                assert!(float_eq(comps.n1, n1));
+                assert!(float_eq(comps.n2, n2));
             }
         )*
         }
@@ -384,11 +314,10 @@ mod tests {
             .direction(0.0, 0.0, 1.0);
         let shape = Sphere::glass().with_transform(Transform::translation(0.0, 0.0, 1.0));
         let i = Intersection::new(5.0, &shape);
-        let xs = Intersections::new(vec![i]);
 
-        let comps = i.prepare_computations(r, xs);
+        let comps = i.prepare_computations(r, &[i]);
 
-        assert!(comps.under_point.z() > MARGIN.epsilon / 2.0);
+        assert!(comps.under_point.z() > EPSILON / 2.0);
         assert!(comps.point.z() < comps.under_point.z());
     }
 
@@ -398,16 +327,15 @@ mod tests {
         let r = Ray::default()
             .origin(0.0, 0.0, sqrt_n_over_n(2))
             .direction(0.0, 1.0, 0.0);
-        let xs = Intersections::new(vec![
+        let xs = vec![
             Intersection::new(-sqrt_n_over_n(2), &shape),
             Intersection::new(sqrt_n_over_n(2), &shape),
-        ]);
-        let xs_copy = xs.clone();
+        ];
 
-        let comps = xs[1].prepare_computations(r, xs_copy);
+        let comps = xs[1].prepare_computations(r, &xs);
         let reflectance = comps.schlick();
 
-        assert!(approx_eq!(f32, reflectance, 1.0));
+        assert!(float_eq(reflectance, 1.0));
     }
 
     #[test]
@@ -416,16 +344,15 @@ mod tests {
         let r = Ray::default()
             .origin(0.0, 0.0, 0.0)
             .direction(0.0, 1.0, 0.0);
-        let xs = Intersections::new(vec![
+        let xs = vec![
             Intersection::new(-1.0, &shape),
             Intersection::new(1.0, &shape),
-        ]);
-        let xs_copy = xs.clone();
+        ];
 
-        let comps = xs[1].prepare_computations(r, xs_copy);
+        let comps = xs[1].prepare_computations(r, &xs);
         let reflectance = comps.schlick();
 
-        assert!(approx_eq!(f32, reflectance, 0.04));
+        assert!(float_eq(reflectance, 0.04));
     }
 
     #[test]
@@ -434,12 +361,11 @@ mod tests {
         let r = Ray::default()
             .origin(0.0, 0.99, -2.0)
             .direction(0.0, 0.0, 1.0);
-        let xs = Intersections::new(vec![Intersection::new(1.8589, &shape)]);
-        let xs_copy = xs.clone();
+        let xs = vec![Intersection::new(1.8589, &shape)];
 
-        let comps = xs[0].prepare_computations(r, xs_copy);
+        let comps = xs[0].prepare_computations(r, &xs);
         let reflectance = comps.schlick();
 
-        assert!(approx_eq!(f32, reflectance, 0.4887307));
+        assert!(float_eq(reflectance, 0.4887307));
     }
 }

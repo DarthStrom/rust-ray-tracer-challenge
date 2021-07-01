@@ -3,7 +3,8 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use bevy::math::{Vec3A, Vec4};
-use float_cmp::approx_eq;
+
+use crate::float_eq;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Tuple(Vec4);
@@ -83,11 +84,10 @@ impl Tuple {
 
 impl PartialEq for Tuple {
     fn eq(&self, other: &Self) -> bool {
-        let epsilon = 0.00001;
-        approx_eq!(f32, self.0.x, other.0.x, epsilon = epsilon)
-            && approx_eq!(f32, self.0.y, other.0.y, epsilon = epsilon)
-            && approx_eq!(f32, self.0.z, other.0.z, epsilon = epsilon)
-            && approx_eq!(f32, self.0.w, other.0.w, epsilon = epsilon)
+        float_eq(self.0.x, other.0.x)
+            && float_eq(self.0.y, other.0.y)
+            && float_eq(self.0.z, other.0.z)
+            && float_eq(self.0.w, other.0.w)
     }
 }
 
@@ -141,10 +141,10 @@ mod tests {
     fn tuple_with_w_1_is_a_point() {
         let a = Tuple::new(4.3, -4.2, 3.1, 1.0);
 
-        approx_eq!(f32, a.0.x, 4.3);
-        approx_eq!(f32, a.0.y, -4.2);
-        approx_eq!(f32, a.0.z, 3.1);
-        approx_eq!(f32, a.0.w, 1.0);
+        float_eq(a.0.x, 4.3);
+        float_eq(a.0.y, -4.2);
+        float_eq(a.0.z, 3.1);
+        float_eq(a.0.w, 1.0);
         assert!(a.is_point());
         assert!(!a.is_vector());
     }
@@ -153,10 +153,10 @@ mod tests {
     fn tuple_with_w_0_is_a_point() {
         let a = Tuple::new(4.3, -4.2, 3.1, 0.0);
 
-        approx_eq!(f32, a.0.x, 4.3);
-        approx_eq!(f32, a.0.y, -4.2);
-        approx_eq!(f32, a.0.z, 3.1);
-        approx_eq!(f32, a.0.w, 0.0);
+        float_eq(a.0.x, 4.3);
+        float_eq(a.0.y, -4.2);
+        float_eq(a.0.z, 3.1);
+        float_eq(a.0.w, 0.0);
         assert!(!a.is_point());
         assert!(a.is_vector());
     }
@@ -247,35 +247,35 @@ mod tests {
     fn computing_the_magnitude_of_vector_1_0_0() {
         let v = Tuple::vector(1.0, 0.0, 0.0);
 
-        approx_eq!(f32, v.magnitude(), 1.0);
+        float_eq(v.magnitude(), 1.0);
     }
 
     #[test]
     fn computing_the_magnitude_of_vector_0_1_0() {
         let v = Tuple::vector(0.0, 1.0, 0.0);
 
-        approx_eq!(f32, v.magnitude(), 1.0);
+        float_eq(v.magnitude(), 1.0);
     }
 
     #[test]
     fn computing_the_magnitude_of_vector_0_0_1() {
         let v = Tuple::vector(0.0, 0.0, 1.0);
 
-        approx_eq!(f32, v.magnitude(), 1.0);
+        float_eq(v.magnitude(), 1.0);
     }
 
     #[test]
     fn computing_the_magnitude_of_vector_1_2_3() {
         let v = Tuple::vector(1.0, 2.0, 3.0);
 
-        approx_eq!(f32, v.magnitude(), 14_f32.sqrt());
+        float_eq(v.magnitude(), 14_f32.sqrt());
     }
 
     #[test]
     fn computing_the_magnitude_of_vector_neg1_neg2_neg3() {
         let v = Tuple::vector(-1.0, -2.0, -3.0);
 
-        approx_eq!(f32, v.magnitude(), 14_f32.sqrt());
+        float_eq(v.magnitude(), 14_f32.sqrt());
     }
 
     #[test]
@@ -305,7 +305,7 @@ mod tests {
 
         let norm = v.normalize();
 
-        approx_eq!(f32, norm.magnitude(), 1.0);
+        float_eq(norm.magnitude(), 1.0);
     }
 
     #[test]
@@ -313,7 +313,7 @@ mod tests {
         let a = Tuple::vector(1.0, 2.0, 3.0);
         let b = Tuple::vector(2.0, 3.0, 4.0);
 
-        approx_eq!(f32, a.dot(b), 20.0);
+        float_eq(a.dot(b), 20.0);
     }
 
     #[test]

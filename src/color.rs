@@ -1,7 +1,8 @@
 use std::ops::{Add, Mul, Sub};
 
 use bevy::{math::Vec4, render::color};
-use float_cmp::approx_eq;
+
+use crate::float_eq;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Color(color::Color);
@@ -35,10 +36,9 @@ impl Default for Color {
 
 impl PartialEq for Color {
     fn eq(&self, other: &Self) -> bool {
-        let epsilon = 0.01;
-        approx_eq!(f32, self.0.r(), other.0.r(), epsilon = epsilon)
-            && approx_eq!(f32, self.0.g(), other.0.g(), epsilon = epsilon)
-            && approx_eq!(f32, self.0.b(), other.0.b(), epsilon = epsilon)
+        float_eq(self.0.r(), other.0.r())
+            && float_eq(self.0.g(), other.0.g())
+            && float_eq(self.0.b(), other.0.b())
     }
 }
 

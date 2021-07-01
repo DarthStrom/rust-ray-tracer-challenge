@@ -1,9 +1,8 @@
 use std::ops::Mul;
 
 use bevy::math::{Mat4, Vec3, Vec4};
-use float_cmp::approx_eq;
 
-use crate::tuple::Tuple;
+use crate::{float_eq, tuple::Tuple};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Transform(Mat4);
@@ -79,16 +78,15 @@ impl Mul<Tuple> for Transform {
 
     fn mul(self, rhs: Tuple) -> Self::Output {
         let vec = self.0 * rhs.vec();
-        Tuple::new(vec.x, vec.y, vec.z, vec.w)
+        Tuple::new(vec.x, vec.y, vec.z, rhs.vec().w)
     }
 }
 
 impl PartialEq for Transform {
     fn eq(&self, other: &Self) -> bool {
-        let epsilon = 0.00001;
         for i in 0..4 {
             for j in 0..4 {
-                if !approx_eq!(f32, self.0.row(i)[j], other.0.row(i)[j], epsilon = epsilon) {
+                if !float_eq(self.0.row(i)[j], other.0.row(i)[j]) {
                     return false;
                 }
             }

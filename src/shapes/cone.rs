@@ -1,17 +1,19 @@
 use crate::{
-    intersection::{Intersection, Intersections},
+    float_eq,
+    intersection::Intersection,
     materials::Material,
     ray::Ray,
     shapes::{Shape, ShapeBuilder},
     transformations::Transform,
     tuple::Tuple,
-    MARGIN,
+    EPSILON,
 };
-use float_cmp::approx_eq;
 use std::f32::{MAX, MIN};
+use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cone {
+    id: Uuid,
     material: Material,
     transform: Transform,
     minimum: f32,
@@ -29,9 +31,9 @@ impl Cone {
         }
     }
 
-    fn intersect_caps<'a>(&'a self, ray: Ray, xs: Intersections<'a>) -> Intersections<'a> {
-        let mut result = xs.clone();
-        if !self.closed || approx_eq!(f32, ray.direction.y(), 0.0) {
+    fn intersect_caps<'a>(&'a self, ray: Ray, xs: &[Intersection<'a>]) -> Vec<Intersection<'a>> {
+        let mut result = xs.to_vec();
+        if !self.closed || float_eq(ray.direction.y(), 0.0) {
             return result;
         }
 
@@ -47,74 +49,12 @@ impl Cone {
 
         result
     }
-
-    fn local_intersect(&self, ray: Ray) -> Intersections {
-        let a = ray.direction.x().powi(2) - ray.direction.y().powi(2) + ray.direction.z().powi(2);
-
-        let b = 2.0 * ray.origin.x() * ray.direction.x() - 2.0 * ray.origin.y() * ray.direction.y()
-            + 2.0 * ray.origin.z() * ray.direction.z();
-
-        let c = ray.origin.x().powi(2) - ray.origin.y().powi(2) + ray.origin.z().powi(2);
-
-        if a.abs() <= MARGIN.epsilon && b.abs() <= MARGIN.epsilon {
-            return self.intersect_caps(ray, Intersections::new(vec![]));
-        } else if a.abs() <= MARGIN.epsilon {
-            return self.intersect_caps(
-                ray,
-                Intersections::new(vec![Intersection::new(-c / (2.0 * b), self)]),
-            );
-        }
-
-        let disc = b.powi(2) - 4.0 * a * c;
-
-        if disc < 0.0 {
-            Intersections::new(vec![])
-        } else {
-            let mut t0 = (-b - disc.sqrt()) / (2.0 * a);
-            let mut t1 = (-b + disc.sqrt()) / (2.0 * a);
-            if t0 > t1 {
-                let temp = t0;
-                t0 = t1;
-                t1 = temp;
-            }
-            let mut xs = Intersections::new(vec![]);
-
-            let y0 = ray.origin.y() + t0 * ray.direction.y();
-            if self.minimum < y0 && y0 < self.maximum {
-                xs.push(Intersection::new(t0, self));
-            }
-
-            let y1 = ray.origin.y() + t1 * ray.direction.y();
-            if self.minimum < y1 && y1 < self.maximum {
-                xs.push(Intersection::new(t1, self));
-            }
-
-            self.intersect_caps(ray, xs)
-        }
-    }
-
-    fn local_normal_at(&self, point: Tuple) -> Tuple {
-        match point.x().powi(2) + point.z().powi(2) {
-            dist if dist < 1.0 && point.y() >= self.maximum - MARGIN.epsilon => {
-                Tuple::vector(0.0, 1.0, 0.0)
-            }
-            dist if dist < 1.0 && point.y() <= self.minimum + MARGIN.epsilon => {
-                Tuple::vector(0.0, -1.0, 0.0)
-            }
-            dist => {
-                let mut y = dist.sqrt();
-                if point.y() > 0.0 {
-                    y = -y;
-                }
-                Tuple::vector(point.x(), y, point.z())
-            }
-        }
-    }
 }
 
 impl Default for Cone {
     fn default() -> Self {
         Self {
+            id: Uuid::new_v4(),
             minimum: MIN,
             maximum: MAX,
             transform: Transform::default(),
@@ -135,38 +75,88 @@ impl ShapeBuilder for Cone {
 }
 
 impl Shape for Cone {
-    fn box_clone(&self) -> crate::shapes::BoxShape {
-        Box::new((*self).clone())
-    }
-
-    fn box_eq(&self, other: &dyn std::any::Any) -> bool {
-        other.downcast_ref::<Self>().map_or(false, |a| self == a)
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn material(&self) -> &Material {
-        &self.material
+    fn id(&self) -> uuid::Uuid {
+        self.id
     }
 
     fn transform(&self) -> &Transform {
         &self.transform
     }
 
-    fn normal_at(&self, x: f32, y: f32, z: f32) -> Tuple {
-        let world_point = Tuple::point(x, y, z);
-        let obj_point = self.transform().inverse() * world_point;
-        let object_normal = self.local_normal_at(obj_point);
-        let mut world_normal = self.transform.inverse().transpose() * object_normal;
-        world_normal = world_normal.to_vector();
-        world_normal.normalize()
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
     }
 
-    fn intersect(&self, ray: Ray) -> Intersections {
-        let local_ray = ray.transform(self.transform().inverse());
-        self.local_intersect(local_ray)
+    fn material(&self) -> &Material {
+        &self.material
+    }
+
+    fn material_mut(&mut self) -> &mut Material {
+        &mut self.material
+    }
+
+    fn set_material(&mut self, material: Material) {
+        self.material = material;
+    }
+
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+        let a = ray.direction.x().powi(2) - ray.direction.y().powi(2) + ray.direction.z().powi(2);
+
+        let b = 2.0 * ray.origin.x() * ray.direction.x() - 2.0 * ray.origin.y() * ray.direction.y()
+            + 2.0 * ray.origin.z() * ray.direction.z();
+
+        let c = ray.origin.x().powi(2) - ray.origin.y().powi(2) + ray.origin.z().powi(2);
+
+        if a.abs() <= EPSILON && b.abs() <= EPSILON {
+            return self.intersect_caps(ray, &[]);
+        } else if a.abs() <= EPSILON {
+            return self.intersect_caps(ray, &[Intersection::new(-c / (2.0 * b), self)]);
+        }
+
+        let disc = b.powi(2) - 4.0 * a * c;
+
+        if disc < 0.0 {
+            vec![]
+        } else {
+            let mut t0 = (-b - disc.sqrt()) / (2.0 * a);
+            let mut t1 = (-b + disc.sqrt()) / (2.0 * a);
+            if t0 > t1 {
+                let temp = t0;
+                t0 = t1;
+                t1 = temp;
+            }
+            let mut xs: Vec<Intersection> = vec![];
+
+            let y0 = ray.origin.y() + t0 * ray.direction.y();
+            if self.minimum < y0 && y0 < self.maximum {
+                xs.push(Intersection::new(t0, self));
+            }
+
+            let y1 = ray.origin.y() + t1 * ray.direction.y();
+            if self.minimum < y1 && y1 < self.maximum {
+                xs.push(Intersection::new(t1, self));
+            }
+
+            self.intersect_caps(ray, &xs)
+        }
+    }
+
+    fn local_normal_at(&self, point: Tuple) -> Tuple {
+        match point.x().powi(2) + point.z().powi(2) {
+            dist if dist < 1.0 && point.y() >= self.maximum - EPSILON => {
+                Tuple::vector(0.0, 1.0, 0.0)
+            }
+            dist if dist < 1.0 && point.y() <= self.minimum + EPSILON => {
+                Tuple::vector(0.0, -1.0, 0.0)
+            }
+            dist => {
+                let mut y = dist.sqrt();
+                if point.y() > 0.0 {
+                    y = -y;
+                }
+                Tuple::vector(point.x(), y, point.z())
+            }
+        }
     }
 }
 
@@ -195,8 +185,8 @@ mod tests {
                 let xs = shape.local_intersect(r);
 
                 assert_eq!(xs.len(), 2);
-                assert!(approx_eq!(f32, xs[0].t, t0));
-                assert!(approx_eq!(f32, xs[1].t, t1));
+                assert!(float_eq(xs[0].t, t0));
+                assert!(float_eq(xs[1].t, t1));
             }
         )*
         }
@@ -217,8 +207,7 @@ mod tests {
         let xs = shape.local_intersect(r);
 
         assert_eq!(xs.len(), 1);
-        println!("{}", xs[0].t);
-        assert!(approx_eq!(f32, xs[0].t, 0.35355));
+        assert!(float_eq(xs[0].t, 0.35355));
     }
 
     macro_rules! intersecting_a_cones_end_caps {

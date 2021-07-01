@@ -1,15 +1,18 @@
+use uuid::Uuid;
+
 use crate::{
-    intersection::{Intersection, Intersections},
+    intersection::Intersection,
     materials::Material,
     ray::Ray,
     shapes::{Shape, ShapeBuilder},
     transformations::Transform,
     tuple::Tuple,
-    MARGIN,
+    EPSILON,
 };
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Plane {
+    id: Uuid,
     material: Material,
     transform: Transform,
 }
@@ -25,43 +28,47 @@ impl ShapeBuilder for Plane {
 }
 
 impl Shape for Plane {
-    fn box_clone(&self) -> crate::shapes::BoxShape {
-        Box::new((*self).clone())
-    }
-
-    fn box_eq(&self, other: &dyn std::any::Any) -> bool {
-        other.downcast_ref::<Self>().map_or(false, |a| self == a)
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn material(&self) -> &Material {
-        &self.material
+    fn id(&self) -> Uuid {
+        self.id
     }
 
     fn transform(&self) -> &Transform {
         &self.transform
     }
 
-    fn normal_at(&self, _x: f32, _y: f32, _z: f32) -> Tuple {
-        Tuple::vector(0.0, 1.0, 0.0)
+    fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform
     }
 
-    fn intersect(&self, ray: Ray) -> Intersections {
-        if ray.direction.y().abs() < MARGIN.epsilon {
-            Intersections::new(vec![])
+    fn material(&self) -> &Material {
+        &self.material
+    }
+
+    fn material_mut(&mut self) -> &mut Material {
+        &mut self.material
+    }
+
+    fn set_material(&mut self, material: Material) {
+        self.material = material;
+    }
+
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+        if ray.direction.y().abs() < EPSILON {
+            vec![]
         } else {
             let t = -ray.origin.y() / ray.direction.y();
-            Intersections::new(vec![Intersection::new(t, self)])
+            vec![Intersection::new(t, self)]
         }
+    }
+
+    fn local_normal_at(&self, _point: Tuple) -> Tuple {
+        Tuple::vector(0.0, 1.0, 0.0)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use float_cmp::approx_eq;
+    use crate::float_eq;
 
     use super::*;
 
@@ -113,7 +120,7 @@ mod tests {
         let xs = p.intersect(r);
 
         assert_eq!(xs.len(), 1);
-        assert!(approx_eq!(f32, xs[0].t, 1.0));
+        assert!(float_eq(xs[0].t, 1.0));
     }
 
     #[test]
@@ -126,6 +133,6 @@ mod tests {
         let xs = p.intersect(r);
 
         assert_eq!(xs.len(), 1);
-        assert!(approx_eq!(f32, xs[0].t, 1.0));
+        assert!(float_eq(xs[0].t, 1.0));
     }
 }

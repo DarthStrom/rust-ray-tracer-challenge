@@ -16,11 +16,11 @@ mod world;
 #[cfg(test)]
 mod test;
 
+use std::cmp::Ordering;
 use std::{f32::consts::PI, fs};
 
 use camera::Camera;
 use color::Color;
-use float_cmp::F32Margin;
 use lights::PointLight;
 use materials::Material;
 use shapes::cone::Cone;
@@ -32,10 +32,21 @@ use transformations::Transform;
 use tuple::*;
 use world::World;
 
-pub const MARGIN: F32Margin = F32Margin {
-    ulps: 2,
-    epsilon: 0.001,
-};
+pub const EPSILON: f32 = 0.0001;
+
+pub fn float_eq(x: f32, y: f32) -> bool {
+    (y - x).abs() < EPSILON
+}
+
+pub fn float_cmp(x: f32, y: f32) -> Ordering {
+    if float_eq(x, y) {
+        Ordering::Equal
+    } else if x < y {
+        Ordering::Less
+    } else {
+        Ordering::Greater
+    }
+}
 
 #[derive(Clone, Copy)]
 struct Projectile {
