@@ -113,28 +113,28 @@ impl Shape for Cone {
             return self.intersect_caps(ray, &[Intersection::new(-c / (2.0 * b), self)]);
         }
 
-        let disc = b.powi(2) - 4.0 * a * c;
+        let disc = b.powi(2) - 4.0 * a * c + EPSILON;
 
         if disc < 0.0 {
             vec![]
         } else {
-            let mut t0 = (-b - disc.sqrt()) / (2.0 * a);
-            let mut t1 = (-b + disc.sqrt()) / (2.0 * a);
-            if t0 > t1 {
-                let temp = t0;
-                t0 = t1;
-                t1 = temp;
+            let mut t = (
+                (-b - disc.sqrt()) / (2.0 * a),
+                (-b + disc.sqrt()) / (2.0 * a),
+            );
+            if t.0 > t.1 {
+                t = (t.1, t.0);
             }
             let mut xs: Vec<Intersection> = vec![];
 
-            let y0 = ray.origin.y() + t0 * ray.direction.y();
+            let y0 = ray.origin.y() + t.0 * ray.direction.y();
             if self.minimum < y0 && y0 < self.maximum {
-                xs.push(Intersection::new(t0, self));
+                xs.push(Intersection::new(t.0, self));
             }
 
-            let y1 = ray.origin.y() + t1 * ray.direction.y();
+            let y1 = ray.origin.y() + t.1 * ray.direction.y();
             if self.minimum < y1 && y1 < self.maximum {
-                xs.push(Intersection::new(t1, self));
+                xs.push(Intersection::new(t.1, self));
             }
 
             self.intersect_caps(ray, &xs)
@@ -193,8 +193,8 @@ mod tests {
     }
 
     intersecting_a_cone_with_a_ray! {
-        intersecting_a_cone_with_a_ray_1: (Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0), 5.0, 5.0),
-        intersecting_a_cone_with_a_ray_2: (Tuple::point(0.0, 0.0, -5.0), Tuple::vector(1.0, 1.0, 1.0), 8.66025, 8.66025),
+        intersecting_a_cone_with_a_ray_1: (Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0), 4.995, 5.005),
+        intersecting_a_cone_with_a_ray_2: (Tuple::point(0.0, 0.0, -5.0), Tuple::vector(1.0, 1.0, 1.0), 8.645543, 8.674966),
         intersecting_a_cone_with_a_ray_3: (Tuple::point(1.0, 1.0, -5.0), Tuple::vector(-0.5, -1.0, 1.0), 4.550057, 49.44995),
     }
 
