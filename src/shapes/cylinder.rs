@@ -39,13 +39,17 @@ impl Cylinder {
 
         let t = (self.minimum - ray.origin.y()) / ray.direction.y();
         if check_cap(ray, t) {
+            println!("mint t: {}", t);
             result.push(Intersection::new(t, self));
         }
 
         let t = (self.maximum - ray.origin.y()) / ray.direction.y();
         if check_cap(ray, t) {
+            println!("max t: {}", t);
             result.push(Intersection::new(t, self));
         }
+
+        println!("{:?}", result);
 
         result
     }
@@ -100,16 +104,19 @@ impl Shape for Cylinder {
     }
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+        println!("ray: {:?}", ray);
         let a = ray.direction.x().powi(2) + ray.direction.z().powi(2);
+        println!("a: {}", a);
         if float_eq(a, 0.0) {
             return self.intersect_caps(ray, &[]);
         }
 
         let b = 2.0 * ray.origin.x() * ray.direction.x() + 2.0 * ray.origin.z() * ray.direction.z();
-
+        println!("b: {}", b);
         let c = ray.origin.x().powi(2) + ray.origin.z().powi(2) - 1.0;
-
+        println!("c: {}", c);
         let disc = b.powi(2) - 4.0 * a * c;
+        println!("disc: {}", disc);
 
         if disc < 0.0 {
             vec![]
@@ -133,6 +140,8 @@ impl Shape for Cylinder {
                 xs.push(Intersection::new(t1, self));
             }
 
+            println!("xs: {:?}", xs);
+
             self.intersect_caps(ray, &xs)
         }
     }
@@ -154,7 +163,7 @@ fn check_cap(ray: Ray, t: f32) -> bool {
     let x = ray.origin.x() + t * ray.direction.x();
     let z = ray.origin.z() + t * ray.direction.z();
 
-    x.powi(2) + z.powi(2) <= 1.0
+    x.powi(2) + z.powi(2) <= 1.0 + EPSILON
 }
 
 #[cfg(test)]
