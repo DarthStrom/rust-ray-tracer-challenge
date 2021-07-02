@@ -107,9 +107,9 @@ impl Shape for Cone {
 
         let c = ray.origin.x().powi(2) - ray.origin.y().powi(2) + ray.origin.z().powi(2);
 
-        if a.abs() <= EPSILON && b.abs() <= EPSILON {
+        if float_eq(a, 0.0) && float_eq(b, 0.0) {
             return self.intersect_caps(ray, &[]);
-        } else if a.abs() <= EPSILON {
+        } else if float_eq(a, 0.0) {
             return self.intersect_caps(ray, &[Intersection::new(-c / (2.0 * b), self)]);
         }
 
@@ -202,7 +202,7 @@ mod tests {
     fn intersecting_a_cone_with_a_ray_parallel_to_one_of_its_halves() {
         let shape = Cone::default();
         let direction = Tuple::vector(0.0, 1.0, 1.0);
-        let r = Ray::new(Tuple::point(0.0, 0.0, -1.0), direction);
+        let r = Ray::new(Tuple::point(0.0, 0.0, -1.0), direction.normalize());
 
         let xs = shape.local_intersect(r);
 
