@@ -32,6 +32,8 @@ pub trait Shape: 'static + Debug {
     fn material_mut(&mut self) -> &mut Material;
     fn set_material(&mut self, material: Material);
 
+    fn parent(&self) -> Option<Uuid>;
+
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection>;
     fn local_normal_at(&self, point: Tuple) -> Tuple;
 
@@ -52,5 +54,69 @@ pub trait Shape: 'static + Debug {
 impl PartialEq for dyn Shape {
     fn eq(&self, other: &Self) -> bool {
         self.id() == other.id()
+    }
+}
+
+#[cfg(test)]
+#[derive(Debug, Default)]
+pub struct TestShape {
+    pub parent: Option<Uuid>,
+}
+
+#[cfg(test)]
+impl TestShape {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+#[cfg(test)]
+impl Shape for TestShape {
+    fn id(&self) -> Uuid {
+        todo!()
+    }
+
+    fn transform(&self) -> &Transform {
+        todo!()
+    }
+
+    fn set_transform(&mut self, transform: Transform) {
+        todo!()
+    }
+
+    fn material(&self) -> &Material {
+        todo!()
+    }
+
+    fn material_mut(&mut self) -> &mut Material {
+        todo!()
+    }
+
+    fn set_material(&mut self, material: Material) {
+        todo!()
+    }
+
+    fn parent(&self) -> Option<Uuid> {
+        self.parent
+    }
+
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+        todo!()
+    }
+
+    fn local_normal_at(&self, point: Tuple) -> Tuple {
+        todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_shape_has_a_parent_attribute() {
+        let s = TestShape::new();
+
+        assert_eq!(s.parent(), None);
     }
 }

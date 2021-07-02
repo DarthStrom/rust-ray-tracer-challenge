@@ -12,6 +12,7 @@ use crate::{
 #[derive(Clone, Debug, PartialEq)]
 pub struct Sphere {
     id: Uuid,
+    parent: Option<Uuid>,
     transform: Transform,
     material: Material,
 }
@@ -26,6 +27,7 @@ impl Default for Sphere {
     fn default() -> Self {
         Self {
             id: Uuid::new_v4(),
+            parent: None,
             transform: IDENTITY,
             material: Material::default(),
         }
@@ -65,6 +67,10 @@ impl Shape for Sphere {
 
     fn set_material(&mut self, material: Material) {
         self.material = material;
+    }
+
+    fn parent(&self) -> Option<Uuid> {
+        self.parent
     }
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {

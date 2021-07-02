@@ -13,6 +13,7 @@ use crate::{
 #[derive(Clone, Debug, PartialEq)]
 pub struct Plane {
     id: Uuid,
+    parent: Option<Uuid>,
     material: Material,
     transform: Transform,
 }
@@ -21,6 +22,7 @@ impl Default for Plane {
     fn default() -> Self {
         Self {
             id: Uuid::new_v4(),
+            parent: None,
             material: Material::default(),
             transform: IDENTITY,
         }
@@ -60,6 +62,10 @@ impl Shape for Plane {
 
     fn set_material(&mut self, material: Material) {
         self.material = material;
+    }
+
+    fn parent(&self) -> Option<Uuid> {
+        self.parent
     }
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {

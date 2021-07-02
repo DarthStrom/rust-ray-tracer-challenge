@@ -14,6 +14,7 @@ use std::{cmp::Ordering::Equal, f32::MAX};
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cube {
     id: Uuid,
+    parent: Option<Uuid>,
     material: Material,
     transform: Transform,
 }
@@ -22,6 +23,7 @@ impl Default for Cube {
     fn default() -> Self {
         Self {
             id: Uuid::new_v4(),
+            parent: None,
             material: Material::default(),
             transform: IDENTITY,
         }
@@ -92,6 +94,10 @@ impl Shape for Cube {
 
     fn set_material(&mut self, material: Material) {
         self.material = material;
+    }
+
+    fn parent(&self) -> Option<Uuid> {
+        self.parent
     }
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {

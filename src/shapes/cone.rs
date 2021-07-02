@@ -14,6 +14,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cone {
     id: Uuid,
+    parent: Option<Uuid>,
     material: Material,
     transform: Transform,
     minimum: f32,
@@ -55,6 +56,7 @@ impl Default for Cone {
     fn default() -> Self {
         Self {
             id: Uuid::new_v4(),
+            parent: None,
             minimum: MIN,
             maximum: MAX,
             transform: Transform::default(),
@@ -97,6 +99,10 @@ impl Shape for Cone {
 
     fn set_material(&mut self, material: Material) {
         self.material = material;
+    }
+
+    fn parent(&self) -> Option<Uuid> {
+        self.parent
     }
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {

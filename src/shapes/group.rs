@@ -12,6 +12,7 @@ use crate::{
 #[derive(Debug, PartialEq)]
 pub struct Group {
     id: Uuid,
+    parent: Option<Uuid>,
     pub transform: Transform,
     pub material: Material,
     pub objects: Vec<Box<dyn Shape>>,
@@ -27,6 +28,7 @@ impl Default for Group {
     fn default() -> Self {
         Self {
             id: Uuid::new_v4(),
+            parent: None,
             transform: IDENTITY,
             material: Material::default(),
             objects: vec![],
@@ -57,6 +59,10 @@ impl Shape for Group {
 
     fn set_material(&mut self, material: Material) {
         self.material = material;
+    }
+
+    fn parent(&self) -> Option<Uuid> {
+        todo!()
     }
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
