@@ -5,16 +5,26 @@ use crate::{
     materials::Material,
     ray::Ray,
     shapes::{Shape, ShapeBuilder},
-    transformations::Transform,
+    transformations::{Transform, IDENTITY},
     tuple::Tuple,
     EPSILON,
 };
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Plane {
     id: Uuid,
     material: Material,
     transform: Transform,
+}
+
+impl Default for Plane {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            material: Material::default(),
+            transform: IDENTITY,
+        }
+    }
 }
 
 impl ShapeBuilder for Plane {

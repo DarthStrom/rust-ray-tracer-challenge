@@ -5,17 +5,27 @@ use crate::{
     materials::Material,
     ray::Ray,
     shapes::{Shape, ShapeBuilder},
-    transformations::Transform,
+    transformations::{Transform, IDENTITY},
     tuple::Tuple,
     EPSILON,
 };
 use std::{cmp::Ordering::Equal, f32::MAX};
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Cube {
     id: Uuid,
     material: Material,
     transform: Transform,
+}
+
+impl Default for Cube {
+    fn default() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            material: Material::default(),
+            transform: IDENTITY,
+        }
+    }
 }
 
 fn sorted(nums: &[f32]) -> Vec<f32> {
