@@ -558,7 +558,7 @@ mod tests {
             -sqrt_n_over_n(2),
             sqrt_n_over_n(2),
         );
-        let floor = w.objects[0].as_ref();
+        let floor = w.objects[2].as_ref();
         let xs = vec![Intersection::new(SQRT_2, floor)];
 
         let comps = xs[0].prepare_computations(r, &xs);
