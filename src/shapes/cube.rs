@@ -100,6 +100,10 @@ impl Shape for Cube {
         self.parent
     }
 
+    fn set_parent(&mut self, parent: Uuid) {
+        self.parent = Some(parent);
+    }
+
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
         let (xtmin, xtmax) = check_axis(ray.origin.x(), ray.direction.x());
         let (ytmin, ytmax) = check_axis(ray.origin.y(), ray.direction.y());

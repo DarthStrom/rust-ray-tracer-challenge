@@ -105,6 +105,10 @@ impl Shape for Cylinder {
         self.parent
     }
 
+    fn set_parent(&mut self, parent: Uuid) {
+        self.parent = Some(parent);
+    }
+
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
         let a = ray.direction.x().powi(2) + ray.direction.z().powi(2);
         if float_eq(a, 0.0) {

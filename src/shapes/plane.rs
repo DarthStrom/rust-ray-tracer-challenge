@@ -68,6 +68,10 @@ impl Shape for Plane {
         self.parent
     }
 
+    fn set_parent(&mut self, parent: Uuid) {
+        self.parent = Some(parent);
+    }
+
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
         if ray.direction.y().abs() < EPSILON {
             vec![]

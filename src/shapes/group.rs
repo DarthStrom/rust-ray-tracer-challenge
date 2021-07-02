@@ -22,6 +22,11 @@ impl Group {
     fn new() -> Self {
         Self::default()
     }
+
+    fn add_child(&mut self, mut child: Box<dyn Shape>) {
+        child.set_parent(self.id);
+        self.objects.push(child)
+    }
 }
 
 impl Default for Group {
@@ -62,7 +67,11 @@ impl Shape for Group {
     }
 
     fn parent(&self) -> Option<Uuid> {
-        todo!()
+        self.parent
+    }
+
+    fn set_parent(&mut self, parent: Uuid) {
+        self.parent = Some(parent);
     }
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
@@ -76,6 +85,8 @@ impl Shape for Group {
 
 #[cfg(test)]
 mod tests {
+    use crate::shapes::TestShape;
+
     use super::*;
 
     #[test]
@@ -84,5 +95,16 @@ mod tests {
 
         assert!(g.objects.is_empty());
         assert_eq!(g.transform, IDENTITY);
+    }
+
+    #[test]
+    fn adding_a_child_to_a_group() {
+        let mut g = Group::new();
+        let s = TestShape::new();
+
+        g.add_child(Box::new(s));
+
+        assert!(!g.objects.is_empty());
+        assert_eq!(g.objects[0].parent(), Some(g.id));
     }
 }

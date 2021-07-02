@@ -73,6 +73,10 @@ impl Shape for Sphere {
         self.parent
     }
 
+    fn set_parent(&mut self, parent: Uuid) {
+        self.parent = Some(parent);
+    }
+
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
         let discriminant = discriminant(ray);
 

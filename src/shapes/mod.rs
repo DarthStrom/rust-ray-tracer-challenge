@@ -33,6 +33,7 @@ pub trait Shape: 'static + Debug {
     fn set_material(&mut self, material: Material);
 
     fn parent(&self) -> Option<Uuid>;
+    fn set_parent(&mut self, parent: Uuid);
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection>;
     fn local_normal_at(&self, point: Tuple) -> Tuple;
@@ -98,6 +99,10 @@ impl Shape for TestShape {
 
     fn parent(&self) -> Option<Uuid> {
         self.parent
+    }
+
+    fn set_parent(&mut self, parent: Uuid) {
+        self.parent = Some(parent);
     }
 
     fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
