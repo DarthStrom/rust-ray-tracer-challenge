@@ -1,6 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
+    float_eq,
     intersection::Intersection,
     materials::Material,
     ray::Ray,
@@ -127,9 +128,9 @@ impl Shape for Cube {
         let maxc = max(&[abs_x, abs_y, abs_z]);
 
         match maxc {
-            _ if maxc == abs_x => Tuple::vector(point.x(), 0.0, 0.0),
-            _ if maxc == abs_y => Tuple::vector(0.0, point.y(), 0.0),
-            _ if maxc == abs_z => Tuple::vector(0.0, 0.0, point.z()),
+            _ if float_eq(maxc, abs_x) => Tuple::vector(point.x(), 0.0, 0.0),
+            _ if float_eq(maxc, abs_y) => Tuple::vector(0.0, point.y(), 0.0),
+            _ if float_eq(maxc, abs_z) => Tuple::vector(0.0, 0.0, point.z()),
             _ => panic!(),
         }
     }

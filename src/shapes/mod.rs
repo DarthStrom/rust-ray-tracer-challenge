@@ -81,7 +81,7 @@ impl Shape for TestShape {
         todo!()
     }
 
-    fn set_transform(&mut self, transform: Transform) {
+    fn set_transform(&mut self, _transform: Transform) {
         todo!()
     }
 
@@ -93,7 +93,7 @@ impl Shape for TestShape {
         todo!()
     }
 
-    fn set_material(&mut self, material: Material) {
+    fn set_material(&mut self, _material: Material) {
         todo!()
     }
 
@@ -105,11 +105,11 @@ impl Shape for TestShape {
         self.parent = Some(parent);
     }
 
-    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+    fn local_intersect(&self, _ray: Ray) -> Vec<Intersection> {
         todo!()
     }
 
-    fn local_normal_at(&self, point: Tuple) -> Tuple {
+    fn local_normal_at(&self, _point: Tuple) -> Tuple {
         todo!()
     }
 }

@@ -124,23 +124,23 @@ impl Shape for Cylinder {
         if disc < 0.0 {
             vec![]
         } else {
-            let mut t0 = (-b - disc.sqrt()) / (2.0 * a);
-            let mut t1 = (-b + disc.sqrt()) / (2.0 * a);
-            if t0 > t1 {
-                let temp = t0;
-                t0 = t1;
-                t1 = temp;
+            let mut t = (
+                (-b - disc.sqrt()) / (2.0 * a),
+                (-b + disc.sqrt()) / (2.0 * a),
+            );
+            if t.0 > t.1 {
+                t = (t.1, t.0);
             }
             let mut xs = vec![];
 
-            let y0 = ray.origin.y() + t0 * ray.direction.y();
+            let y0 = ray.origin.y() + t.0 * ray.direction.y();
             if self.minimum < y0 && y0 < self.maximum {
-                xs.push(Intersection::new(t0, self));
+                xs.push(Intersection::new(t.0, self));
             }
 
-            let y1 = ray.origin.y() + t1 * ray.direction.y();
+            let y1 = ray.origin.y() + t.1 * ray.direction.y();
             if self.minimum < y1 && y1 < self.maximum {
-                xs.push(Intersection::new(t1, self));
+                xs.push(Intersection::new(t.1, self));
             }
 
             self.intersect_caps(ray, &xs)
@@ -256,9 +256,11 @@ mod tests {
             #[test]
             fn $name() {
                 let (point, direction, count) = $value;
-                let mut cyl = Cylinder::default();
-                cyl.minimum = 1.0;
-                cyl.maximum = 2.0;
+                let cyl = Cylinder {
+                    minimum: 1.0,
+                    maximum: 2.0,
+                    ..Cylinder::default()
+                };
                 let direction = direction.normalize();
                 let r = Ray::new(point, direction);
 
@@ -292,10 +294,12 @@ mod tests {
             #[test]
             fn $name() {
                 let (point, direction, count) = $value;
-                let mut cyl = Cylinder::default();
-                cyl.minimum = 1.0;
-                cyl.maximum = 2.0;
-                cyl.closed = true;
+                let cyl = Cylinder {
+                    minimum: 1.0,
+                    maximum: 2.0,
+                    closed: true,
+                    ..Cylinder::default()
+                };
                 let direction = direction.normalize();
                 let r = Ray::new(point, direction);
 
@@ -322,10 +326,12 @@ mod tests {
             #[test]
             fn $name() {
                 let (point, normal) = $value;
-                let mut cyl = Cylinder::default();
-                cyl.minimum = 1.0;
-                cyl.maximum = 2.0;
-                cyl.closed = true;
+                let cyl = Cylinder {
+                    minimum: 1.0,
+                    maximum: 2.0,
+                    closed: true,
+                    ..Cylinder::default()
+                };
 
                 let n = cyl.local_normal_at(point);
 

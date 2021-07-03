@@ -74,11 +74,11 @@ impl Shape for Group {
         self.parent = Some(parent);
     }
 
-    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+    fn local_intersect(&self, _ray: Ray) -> Vec<Intersection> {
         todo!()
     }
 
-    fn local_normal_at(&self, point: Tuple) -> Tuple {
+    fn local_normal_at(&self, _point: Tuple) -> Tuple {
         todo!()
     }
 }
