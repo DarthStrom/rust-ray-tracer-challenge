@@ -18,6 +18,10 @@ pub struct Sphere {
 }
 
 impl Sphere {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn glass() -> Self {
         Self::default().with_material(Material::default().transparency(1.0).refractive_index(1.5))
     }

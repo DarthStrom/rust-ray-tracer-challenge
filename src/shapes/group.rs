@@ -74,18 +74,28 @@ impl Shape for Group {
         self.parent = Some(parent);
     }
 
-    fn local_intersect(&self, _ray: Ray) -> Vec<Intersection> {
-        todo!()
+    fn local_intersect(&self, ray: Ray) -> Vec<Intersection> {
+        let mut result = vec![];
+
+        for object in &self.objects {
+            let intersections = object.intersect(ray);
+            for intersection in intersections {
+                result.push(intersection);
+            }
+        }
+
+        result.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        result
     }
 
     fn local_normal_at(&self, _point: Tuple) -> Tuple {
-        todo!()
+        panic!("Don't call me bro!")
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::shapes::TestShape;
+    use crate::shapes::{sphere::Sphere, ShapeBuilder, TestShape};
 
     use super::*;
 
@@ -106,5 +116,45 @@ mod tests {
 
         assert!(!g.objects.is_empty());
         assert_eq!(g.objects[0].parent(), Some(g.id));
+    }
+
+    #[test]
+    fn intersecting_a_ray_with_an_empty_group() {
+        let g = Group::new();
+        let r = Ray::default()
+            .origin(0.0, 0.0, 0.0)
+            .direction(0.0, 0.0, 1.0);
+
+        let xs = g.local_intersect(r);
+
+        assert!(xs.is_empty())
+    }
+
+    #[test]
+    fn intersecting_a_ray_with_a_nonempty_group() {
+        let mut g = Group::new();
+
+        let s1 = Sphere::new();
+        let s1_id = s1.id();
+
+        let s2 = Sphere::new().with_transform(Transform::translation(0.0, 0.0, -3.0));
+        let s2_id = s2.id();
+
+        let s3 = Sphere::new().with_transform(Transform::translation(5.0, 0.0, 0.0));
+
+        g.add_child(Box::new(s1));
+        g.add_child(Box::new(s2));
+        g.add_child(Box::new(s3));
+
+        let r = Ray::default()
+            .origin(0.0, 0.0, -5.0)
+            .direction(0.0, 0.0, 1.0);
+        let xs = g.local_intersect(r);
+
+        assert_eq!(xs.len(), 4);
+        assert_eq!(xs[0].object.id(), s2_id);
+        assert_eq!(xs[1].object.id(), s2_id);
+        assert_eq!(xs[2].object.id(), s1_id);
+        assert_eq!(xs[3].object.id(), s1_id);
     }
 }

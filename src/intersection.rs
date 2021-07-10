@@ -5,7 +5,7 @@ use crate::{float_cmp, ray::Ray, shapes::Shape, tuple::Tuple, EPSILON};
 #[derive(Copy, Clone, Debug)]
 pub struct Intersection<'a> {
     pub t: f32,
-    object: &'a dyn Shape,
+    pub object: &'a dyn Shape,
 }
 
 impl<'a> Intersection<'a> {
