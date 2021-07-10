@@ -157,4 +157,21 @@ mod tests {
         assert_eq!(xs[2].object.id(), s1_id);
         assert_eq!(xs[3].object.id(), s1_id);
     }
+
+    #[test]
+    fn intersecting_a_transformed_group() {
+        let mut g = Group::new();
+        g.transform = Transform::scaling(2.0, 2.0, 2.0);
+
+        let s = Sphere::new().with_transform(Transform::translation(5.0, 0.0, 0.0));
+
+        g.add_child(Box::new(s));
+
+        let r = Ray::default()
+            .origin(10.0, 0.0, -10.0)
+            .direction(0.0, 0.0, 1.0);
+
+        let xs = g.intersect(r);
+        assert_eq!(xs.len(), 2);
+    }
 }
